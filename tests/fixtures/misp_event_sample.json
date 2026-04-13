@@ -1,0 +1,49 @@
+{
+  "response": [
+    {
+      "Event": {
+        "id": "5678",
+        "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "info": "Phishing campaign targeting finance sector",
+        "date": "2026-02-10",
+        "threat_level_id": "1",
+        "analysis": "2",
+        "distribution": "1",
+        "Tag": [
+          {"name": "tlp:amber"},
+          {"name": "type:phishing"},
+          {"name": "misp-galaxy:malware=\"Dridex\""}
+        ],
+        "Attribute": [
+          {
+            "type": "domain",
+            "value": "phish-domain.example.com",
+            "category": "Network activity",
+            "comment": "Phishing landing page",
+            "to_ids": true,
+            "first_seen": "2026-02-10T00:00:00",
+            "last_seen": "2026-03-01T00:00:00"
+          },
+          {
+            "type": "ip-src",
+            "value": "10.20.30.40",
+            "category": "Network activity",
+            "comment": "Source IP",
+            "to_ids": true,
+            "first_seen": null,
+            "last_seen": null
+          },
+          {
+            "type": "sha256",
+            "value": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            "category": "Payload delivery",
+            "comment": "Malware dropper",
+            "to_ids": true,
+            "first_seen": null,
+            "last_seen": null
+          }
+        ]
+      }
+    }
+  ]
+}

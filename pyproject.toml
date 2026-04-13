@@ -1,0 +1,17 @@
+[project]
+name = "cti-aggregator"
+version = "1.0.0"
+description = "Automated Cyber Threat Intelligence Aggregator and Normalization Framework"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["tests/*", "backend/ml/models/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

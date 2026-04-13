@@ -1,0 +1,42 @@
+{
+  "count": 1,
+  "next": null,
+  "results": [
+    {
+      "id": "pulse-001",
+      "name": "Test Botnet Campaign",
+      "created": "2025-12-01T08:30:00",
+      "modified": "2026-03-15T14:20:00",
+      "TLP": "green",
+      "description": "Tracking a botnet campaign",
+      "tags": ["botnet", "c2", "tor"],
+      "malware_families": ["Emotet"],
+      "references": ["https://example.com/report"],
+      "targeted_countries": ["US"],
+      "adversary": "APT-Test",
+      "indicators": [
+        {
+          "indicator": "185.220.101.45",
+          "type": "IPv4",
+          "title": "C2 Server",
+          "description": "Known C2 IP",
+          "is_active": true
+        },
+        {
+          "indicator": "evil-domain.example.com",
+          "type": "domain",
+          "title": "Malicious domain",
+          "description": "Payload delivery domain",
+          "is_active": true
+        },
+        {
+          "indicator": "52c329f593760c616c906c34cd122f7ecd48128a139e547b976349904b209863",
+          "type": "FileHash-SHA256",
+          "title": "Malware hash",
+          "description": "Emotet sample",
+          "is_active": false
+        }
+      ]
+    }
+  ]
+}
