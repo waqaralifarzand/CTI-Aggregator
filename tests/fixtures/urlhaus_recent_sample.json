@@ -1,0 +1,50 @@
+{
+  "query_status": "ok",
+  "urls": [
+    {
+      "id": "12345",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/12345/",
+      "url": "http://malicious-example.com/payload.exe",
+      "url_status": "online",
+      "host": "93.184.216.34",
+      "date_added": "2026-03-20 12:00:00 UTC",
+      "threat": "malware_download",
+      "blacklists": {
+        "spamhaus_dbl": "listed",
+        "surbl": "not listed"
+      },
+      "reporter": "abuse_ch",
+      "larted": true,
+      "tags": ["elf", "mirai"],
+      "payloads": [
+        {
+          "md5_hash": "d41d8cd98f00b204e9800998ecf8427e",
+          "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "file_type": "elf",
+          "file_size": 52428,
+          "signature": "Mirai",
+          "firstseen": "2026-03-20",
+          "virustotal": null,
+          "urlhaus_download": "https://urlhaus-api.abuse.ch/v1/download/e3b0c44298fc1c/"
+        }
+      ]
+    },
+    {
+      "id": "12346",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/12346/",
+      "url": "http://phishing-site.net/login.html",
+      "url_status": "offline",
+      "host": "10.0.0.1",
+      "date_added": "2026-03-19 08:30:00 UTC",
+      "threat": "phishing",
+      "blacklists": {
+        "spamhaus_dbl": "not listed",
+        "surbl": "not listed"
+      },
+      "reporter": "test_reporter",
+      "larted": false,
+      "tags": ["phishing"],
+      "payloads": []
+    }
+  ]
+}
