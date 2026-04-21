@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 from fastapi import APIRouter, Depends, Request
@@ -10,7 +12,6 @@ from backend.schemas.prediction import (
     TrainRequest, TrainResponse, ModelInfoResponse,
 )
 from backend.ml.predict import Predictor
-from backend.ml.training import train_model
 from backend.models.indicator import Indicator
 
 router = APIRouter()
@@ -43,6 +44,8 @@ def trigger_training(
     db: Session = Depends(get_db),
 ):
     """Train/retrain the ML model on current indicator data."""
+    from backend.ml.training import train_model
+
     indicators = db.query(Indicator).all()
     if len(indicators) < 10:
         return TrainResponse(
@@ -51,7 +54,6 @@ def trigger_training(
             metrics={"error": "Not enough data. Need at least 10 indicators."},
         )
 
-    # Convert to dicts
     records = []
     for ind in indicators:
         records.append({
@@ -69,7 +71,6 @@ def trigger_training(
 
     metrics = train_model(records, model_version=body.version)
 
-    # Reload model into app state
     import joblib
     from backend.config import settings
 
@@ -78,7 +79,6 @@ def trigger_training(
     except FileNotFoundError:
         pass
 
-    # Log to scan history
     scan = ScanHistory(
         action="train",
         details=json.dumps({"version": body.version, "status": "completed"}),

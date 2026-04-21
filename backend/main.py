@@ -14,14 +14,13 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("Database initialized.")
 
-    # Load ML model into app state if it exists
     try:
         import joblib
 
         model_data = joblib.load(settings.MODEL_PATH)
         app.state.ml_model = model_data
         logger.info(f"ML model loaded: version={model_data.get('version', 'unknown')}")
-    except FileNotFoundError:
+    except (FileNotFoundError, ImportError):
         app.state.ml_model = None
         logger.info("No ML model found. Prediction endpoint will use fallback.")
 

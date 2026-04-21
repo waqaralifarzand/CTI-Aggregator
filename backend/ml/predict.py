@@ -1,8 +1,14 @@
+from __future__ import annotations
+
 from typing import Dict, Any, List, Optional
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    _PANDAS_AVAILABLE = False
+    pd = None  # type: ignore
 
-from backend.ml.features import extract_features, FEATURE_COLUMNS
 from backend.utils.logging import logger
 
 LABEL_MAP_INV = {0: "low", 1: "medium", 2: "high", 3: "critical"}
@@ -16,20 +22,20 @@ class Predictor:
 
     @property
     def is_ready(self) -> bool:
-        return self.model_data is not None and "model" in self.model_data
+        return self.model_data is not None and "model" in self.model_data and _PANDAS_AVAILABLE
 
     def predict_single(self, indicator_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Predict severity for a single indicator."""
         if not self.is_ready:
             return {"severity": "medium", "confidence": 0.0}
 
+        from backend.ml.features import extract_features, FEATURE_COLUMNS
         df = pd.DataFrame([indicator_dict])
         features = extract_features(df)
 
         clf = self.model_data["model"]
         feature_cols = self.model_data.get("feature_columns", FEATURE_COLUMNS)
 
-        # Ensure all required columns exist
         for col in feature_cols:
             if col not in features.columns:
                 features[col] = 0
@@ -55,6 +61,7 @@ class Predictor:
                 for r in records
             ]
 
+        from backend.ml.features import extract_features, FEATURE_COLUMNS
         df = pd.DataFrame(records)
         features = extract_features(df)
 

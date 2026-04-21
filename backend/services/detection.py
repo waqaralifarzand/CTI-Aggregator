@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 from typing import List
 
-import pandas as pd
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    _PANDAS_AVAILABLE = False
+    pd = None  # type: ignore
+
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -22,6 +30,10 @@ class DetectionEngine:
 
         Returns the number of new flags generated.
         """
+        if not _PANDAS_AVAILABLE:
+            logger.warning("pandas not installed; anomaly detection engine skipped.")
+            return 0
+
         indicators = self.db.query(Indicator).all()
         if not indicators:
             return 0
@@ -87,7 +99,6 @@ class DetectionEngine:
         """Rule 2: Flag IoC types with report counts exceeding threshold * historical median."""
         flags = []
 
-        # Convert first_seen to date
         df_copy = df.copy()
         df_copy["report_date"] = pd.to_datetime(df_copy["first_seen"], errors="coerce")
         df_copy = df_copy.dropna(subset=["report_date"])
@@ -97,7 +108,6 @@ class DetectionEngine:
         df_copy["report_date"] = df_copy["report_date"].dt.normalize()
         today = pd.Timestamp.now(tz=timezone.utc).normalize()
 
-        # Counts per ioc_type per day
         daily_counts = df_copy.groupby(["ioc_type", "report_date"]).size().reset_index(name="count")
 
         for ioc_type in daily_counts["ioc_type"].unique():
@@ -112,7 +122,6 @@ class DetectionEngine:
             today_count = today_row["count"].iloc[0]
 
             if today_count / historical_median > threshold:
-                # Flag all today's indicators of this type
                 mask = (df_copy["ioc_type"] == ioc_type) & (df_copy["report_date"] == today)
                 for ind_id in df_copy[mask]["id"].tolist():
                     flags.append(AnomalyFlag(
@@ -146,7 +155,6 @@ class DetectionEngine:
             if len(family_df) < 3:
                 continue
 
-            # Group by time windows
             start_time = family_df["first_seen_ts"].iloc[0]
             window_delta = pd.Timedelta(hours=window_hours)
 
@@ -172,7 +180,6 @@ class DetectionEngine:
                     current_group = [row["id"]]
                     current_start = row["first_seen_ts"]
 
-            # Handle last group
             if len(current_group) >= 3:
                 for ind_id in current_group:
                     flags.append(AnomalyFlag(
@@ -234,7 +241,6 @@ class DetectionEngine:
 
         has_last_seen["days_since_seen"] = (now - has_last_seen["last_seen_ts"]).dt.days
 
-        # Stale indicators
         stale = has_last_seen[has_last_seen["days_since_seen"] > decay_days]
         for _, row in stale.iterrows():
             flags.append(AnomalyFlag(
@@ -245,7 +251,6 @@ class DetectionEngine:
                 metadata_json=json.dumps({"days_since_seen": int(row["days_since_seen"])}),
             ))
 
-        # Reactivation detection: stale + recently re-reported
         if not stale.empty:
             stale_with_first = stale.dropna(subset=["first_seen_ts"])
             if not stale_with_first.empty:

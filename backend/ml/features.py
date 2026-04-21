@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import json
 
-import pandas as pd
-import numpy as np
+try:
+    import pandas as pd
+    import numpy as np
+    _ML_AVAILABLE = True
+except ImportError:
+    _ML_AVAILABLE = False
+    pd = None  # type: ignore
+    np = None  # type: ignore
 
 from backend.utils.logging import logger
 
-# Canonical feature column order used by the model
 FEATURE_COLUMNS = [
     "num_sources", "mean_feed_score", "max_feed_score", "min_feed_score",
     "ioc_type_ip", "ioc_type_domain", "ioc_type_url", "ioc_type_hash", "ioc_type_email", "ioc_type_other",
@@ -27,6 +34,9 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns a DataFrame with FEATURE_COLUMNS columns.
     """
+    if not _ML_AVAILABLE:
+        raise RuntimeError("pandas/numpy are not installed; ML features unavailable.")
+
     features = pd.DataFrame(index=df.index)
 
     # --- Cross-feed aggregated features ---
@@ -76,7 +86,6 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     features["num_malware_families"] = df.groupby("ioc_value")["malware_family"].transform("nunique")
 
     # --- Feed agreement ---
-    # Fraction of feeds reporting the most common severity for this IoC
     def _agreement(group):
         if len(group) <= 1:
             return 1.0
@@ -91,13 +100,11 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     features["tlp_numeric"] = df["tlp"].map(tlp_map).fillna(0).astype(int)
 
     # --- Placeholder features (enriched data may not always be available) ---
-    features["is_active_ratio"] = 1.0  # Default: assume active
-    features["has_payload"] = 0  # Can be enriched from URLhaus data
+    features["is_active_ratio"] = 1.0
+    features["has_payload"] = 0
 
-    # Anomaly score from detection engine (if available)
     features["anomaly_score"] = df.get("anomaly_score", pd.Series(0.0, index=df.index))
 
-    # Detection flags (if anomaly_flags column exists)
     flag_cols = {
         "flag_duplicate": "duplicate_cross_feed",
         "flag_frequency_spike": "frequency_spike",
@@ -114,10 +121,9 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
         else:
             features[col] = 0
 
-    features["blacklist_count"] = 0  # Can be enriched from URLhaus blacklist data
+    features["blacklist_count"] = 0
     features["hour_of_day"] = first_seen.dt.hour.fillna(12).astype(int)
 
-    # Ensure column order and fill NaN
     for col in FEATURE_COLUMNS:
         if col not in features.columns:
             features[col] = 0
