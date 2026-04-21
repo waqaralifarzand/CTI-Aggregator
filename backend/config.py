@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     MISP_VERIFY_SSL: bool = True
 
     # App
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     LOG_LEVEL: str = "INFO"
 
     # ML
