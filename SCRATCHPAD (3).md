@@ -117,7 +117,64 @@
 ---
 
 ## Phase 2 — Feed Integration: IoC Detection + OTX + Abuse.ch + Scan Endpoint
-*(To be filled by Claude Code after Phase 2 execution)*
+**Date:** 2026-05-26
+**Branch:** claude/trusting-dirac-V4y3q
+**Status:** ✅ Complete
+
+### What Was Built
+- `CLAUDE.md` — VirusTotal added to Feed Integrations table
+- `ARCHITECTURE.md` — vt_service.py in services listing, VT_API_KEY in env sections, virustotal as valid feed_name, VTPanel.jsx in component map
+- `backend/.env` — VT_API_KEY=placeholder_key added
+- `backend/.env.example` — VT_API_KEY=REPLACE_WITH_YOUR_VT_KEY added
+- `backend/services/ioc_detector.py` — detect_type() using ipaddress lib + regex; handles IPv4/IPv6, MD5(32), SHA256(64), SHA1(40), domain; raises ValueError for unrecognized
+- `backend/services/otx_service.py` — query_otx() async httpx; maps ioc_type to OTX endpoint; normalizes pulse_count, threat_tags, categories, country; graceful 404/error handling
+- `backend/services/abusech_service.py` — query_urlhaus() (POST /host/ for ip/domain), query_malwarebazaar() (POST get_info for hashes); graceful N/A handling for wrong type
+- `backend/services/vt_service.py` — query_virustotal() for /files/, /ip_addresses/, /domains/; returns detections + total_engines + flagged_engines; skips if key is placeholder
+- `backend/services/geo_service.py` — query_geo() async httpx to ip-api.com; returns country/city/isp/asn or None
+- `backend/services/whois_service.py` — query_whois() runs python-whois in thread executor (asyncio.wait_for 10s); returns registrar/dates/name_servers or None
+- `backend/services/aggregator_service.py` — run_scan() orchestrates all feeds with asyncio.gather; detects type → queries applicable feeds concurrently → computes score/severity → returns full response dict with UUID scan_id
+- `backend/utils/severity.py` — compute_score() (OTX: +20/+15/+25 pulse tiers, +15 high-risk tags; URLhaus +30; MB +35; combo +10; VT: +20/+30/+40 detection tiers); score_to_severity(); generate_recommendations() (2–3 bullets)
+- `backend/schemas/scan.py` — ScanRequest (with validator), IocInfo, GeoData, WhoisData, BlacklistStatus, ScanResponse, RecentScanItem
+- `backend/schemas/feed.py` — FeedStatusResponse, FeedRefreshResponse
+- `backend/routers/scan.py` — full POST /api/scan (upsert IoC + new ScanResult + FeedResult rows), GET /api/scan/{scan_id} (JSON from raw_summary), GET /api/scans/recent
+- `backend/routers/feeds.py` — GET /api/feeds (all feed_status rows), POST /api/feeds/{feed_name}/refresh (ping feed + update status)
+- `backend/main.py` — _seed_feed_status() on startup: upserts otx/urlhaus/malwarebazaar/virustotal rows
+
+### What Works
+- ✅ POST /api/scan {"value": "8.8.8.8"} → HTTP 200, success:true, correct structure, DB written
+- ✅ POST /api/scan {"value": "44d88612fea8a8f36de82e1278abb02f"} → HTTP 200, hash_md5 detected, urlhaus.applicable=false
+- ✅ POST /api/scan {"value": "google.com"} → HTTP 200, domain detected, urlhaus.applicable=true
+- ✅ Same IoC scanned twice → scan_count incremented (8.8.8.8 shows scan_count=2)
+- ✅ GET /api/scan/{scan_id} → returns stored raw_summary JSON
+- ✅ GET /api/scans/recent?limit=3 → returns 3 most recent with correct fields
+- ✅ GET /api/feeds → returns 4 feeds with display names
+- ✅ All 5 DB tables written: iocs (3 rows), scan_results (4 rows), feed_results (16 rows), feed_status (4 rows seeded)
+- ✅ Invalid IoC → HTTP 422 with error message
+- ✅ Empty value → HTTP 422 Pydantic validation error
+- ✅ No 500 errors on any test
+
+### What's Pending / Skipped
+- Live feed data returns clean/null because sandbox network blocks external APIs (ip-api.com, OTX, Abuse.ch, VT hostnames not in allowlist). All error paths handled gracefully.
+- POST /api/feeds/{feed_name}/refresh tested structurally but ping returns error (expected in sandbox)
+
+### Known Issues
+- External APIs blocked in sandbox environment — real threat data will appear when run locally with valid API keys and network access. Error handling confirmed graceful.
+- WHOIS returns None in sandbox (network blocked) — correct behavior per spec
+
+### Mid-Execution Decisions
+- Branch: same `claude/trusting-dirac-V4y3q` per system constraint (not `phase-2-feed-integration`)
+- VT scoring added: detections>0 +20, >10 +30, >30 +40 (as specified in prompt)
+- `feeds` dict in response includes geo/whois keys even for non-applicable types (null values) — frontend can check null safely
+- ScanResult.scanned_at stored as UTC datetime; .isoformat() used in GET responses
+- ip-api.com geo request includes `?fields=` param to minimize response size
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Phase 3: Home page + Results page UI — ScanBar, IocTypeBadge, all result panel components (OTXPanel, AbuseChPanel, VTPanel, GeoPanel, WhoisPanel, MLPredictionPanel, BlacklistPanel, RecommendationsPanel, ThreatOverviewCard)
 
 ---
 

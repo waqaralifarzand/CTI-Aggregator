@@ -24,6 +24,27 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     create_tables()
+    _seed_feed_status()
+
+
+def _seed_feed_status():
+    from .database import SessionLocal
+    from .models.feed_status import FeedStatus
+    from datetime import datetime, timezone
+
+    feeds = ["otx", "urlhaus", "malwarebazaar", "virustotal"]
+    db = SessionLocal()
+    try:
+        for feed_name in feeds:
+            if not db.query(FeedStatus).filter(FeedStatus.feed_name == feed_name).first():
+                db.add(FeedStatus(
+                    feed_name=feed_name,
+                    status="unknown",
+                    updated_at=datetime.now(timezone.utc),
+                ))
+        db.commit()
+    finally:
+        db.close()
 
 
 @app.get("/api/health")
