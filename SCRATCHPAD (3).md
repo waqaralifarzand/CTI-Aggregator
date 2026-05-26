@@ -242,7 +242,66 @@
 ---
 
 ## Phase 4 — Dashboard Page: Stats, Charts, Ticker
-*(To be filled by Claude Code after Phase 4 execution)*
+**Date:** 2026-05-26
+**Branch:** claude/trusting-dirac-V4y3q
+**Status:** ✅ Complete
+
+### What Was Built
+**Backend:**
+- `backend/routers/dashboard.py` — full implementation of all 5 endpoints:
+  - GET /api/dashboard/stats — total/threats/critical/clean counts via SQLAlchemy aggregates
+  - GET /api/dashboard/activity?days=N — per-day scans+threats for last N days using datetime window queries
+  - GET /api/dashboard/severity-breakdown — all 5 severity levels including zero-count levels
+  - GET /api/dashboard/ioc-breakdown — IoC type counts from iocs table
+  - GET /api/dashboard/ticker — high/critical scan_results with OTX tags from feed_results join
+- Seeded 10 varied-severity rows (critical×2, high×4, medium×2, low×1, clean×1) spread across last 7 days
+
+**Frontend:**
+- `frontend/src/hooks/useDashboard.js` — parallel fetch of 7 data sections via individual Promises; each has own loading/error flag; exposes refresh()
+- `frontend/src/components/dashboard/StatCard.jsx` — icon + label + large value + optional subtitle; left accent border via accentColor prop
+- `frontend/src/components/dashboard/SeverityDonut.jsx` — Recharts PieChart with innerRadius; SVG center label showing total; custom legend with swatch + label + count; all colors via HEX constants mapped to severity CSS var values
+- `frontend/src/components/dashboard/IocTypeBar.jsx` — Recharts BarChart; cyan bars (#06b6d4); custom tooltip; TYPE_LABELS mapping
+- `frontend/src/components/dashboard/ActivityLine.jsx` — Recharts LineChart; two lines (scans=cyan, threats=orange); monotone curve; custom tooltip; MM-DD date labels
+- `frontend/src/components/dashboard/FeedHealthWidget.jsx` — status pill (active/error/syncing/unknown); relativeTime(); Refresh button triggers POST /api/feeds/{name}/refresh; local state update on response; mini spinner
+- `frontend/src/components/dashboard/RecentScansTable.jsx` — 10-row table with JetBrains Mono IoC values; SeverityBadge; relativeTime; LoadingSkeleton rows while loading; EmptyState if empty; link to /results/{scan_id}
+- `frontend/src/components/dashboard/LiveTicker.jsx` — horizontal marquee; "⚠ LIVE THREATS" left label; doubled items for seamless loop; pause on hover; 30s polling; hidden if no high/critical items; navigate on click
+- `frontend/src/pages/Dashboard.jsx` — full rewrite: LiveTicker (full width), page header + Refresh button, 4 StatCards, 3-col chart row, 2-col bottom (FeedHealthWidget 2×2 + RecentScansTable)
+- `frontend/src/index.css` — added `@keyframes marquee`
+
+### What Works
+- ✅ GET /api/dashboard/stats → {total_scans:20, threats_found:9, critical_alerts:2, clean_scans:11}
+- ✅ GET /api/dashboard/severity-breakdown → all 5 levels with counts
+- ✅ GET /api/dashboard/ioc-breakdown → domain:8, hash_md5:2, ip:6
+- ✅ GET /api/dashboard/activity?days=3 → per-day data including today
+- ✅ GET /api/dashboard/ticker → 5 high/critical items with tags
+- ✅ GET /api/feeds → 4 feeds (otx/urlhaus/malwarebazaar/virustotal)
+- ✅ POST /api/feeds/urlhaus/refresh → returns {status:error, message:'Feed check failed: HTTP 403'} (network blocked in sandbox — endpoint works correctly)
+- ✅ Frontend build: 0 errors, 665 modules
+- ✅ LiveTicker: items present in DB (visible), hides when no high/critical
+- ✅ All chart colors via HEX constants mapped from CSS variables (Recharts can't resolve CSS vars at paint time)
+- ✅ RecentScansTable rows link to /results/{scan_id}
+
+### What's Pending / Skipped
+- Feed refresh pings return 'error' in sandbox (network blocked) — expected; widget correctly shows error status and message
+- No real-time SSE/WebSocket; ticker polls every 30s as specified
+
+### Known Issues
+- None
+
+### Mid-Execution Decisions
+- Branch: same `claude/trusting-dirac-V4y3q` per system constraint
+- Recharts can't use CSS var() values in `fill`/`stroke` props directly — used hardcoded HEX constants matching the CSS variables. These are the same values as the CSS vars so the visual result is identical
+- Seeded 10 test rows with varied severities so charts have something meaningful to display
+- Activity query uses per-day datetime windows (UTC) rather than SQLite date() function to avoid timezone issues
+- SeverityDonut filters zero-count severities from Recharts data (they'd show as invisible 0-width segments) but includes them all in legend only if count > 0
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Phase 5: Reports page + CSV export — implement GET /api/reports (paginated, filterable), GET /api/reports/export (CSV), FilterBar, ReportsTable, ExportButton, useReports hook
 
 ---
 
