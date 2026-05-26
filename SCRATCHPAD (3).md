@@ -179,7 +179,65 @@
 ---
 
 ## Phase 3 — Home Page + Results Page UI
-*(To be filled by Claude Code after Phase 3 execution)*
+**Date:** 2026-05-26
+**Branch:** claude/trusting-dirac-V4y3q
+**Status:** ✅ Complete
+
+### What Was Built
+- `frontend/src/components/shared/SeverityBadge.jsx` — pill badge, 5 variants (critical/high/medium/low/clean), CSS variable colors, 15% opacity bg, 3 sizes
+- `frontend/src/components/shared/CopyButton.jsx` — clipboard copy, 2s "Copied!" confirmation with checkmark
+- `frontend/src/components/shared/ShareButton.jsx` — copies current URL, 2s confirmation
+- `frontend/src/components/shared/LoadingSkeleton.jsx` — shimmer block (height/width props) + SkeletonPanel composite
+- `frontend/src/components/shared/EmptyState.jsx` — icon + title + description centered layout
+- `frontend/src/components/shared/ErrorState.jsx` — error icon + message + optional retry button
+- `frontend/src/components/scanner/IocTypeBadge.jsx` — client-side type detection (no API), colored pill (IP=blue, domain=cyan, hashes=yellow); exports detectTypeClient
+- `frontend/src/components/scanner/ScanningState.jsx` — animated spinner + "Scanning…" + IoC value
+- `frontend/src/hooks/useScan.js` — iocValue, loading, error state + scan() function
+- `frontend/src/components/results/ThreatOverviewCard.jsx` — SVG score ring (colored by severity), threat score, ML status, scanned timestamp
+- `frontend/src/components/results/OTXPanel.jsx` — collapsible, OTX pulses/tags/categories, found/not-found states
+- `frontend/src/components/results/AbuseChPanel.jsx` — URLhaus + MalwareBazaar sub-sections, applicable/N-A handling
+- `frontend/src/components/results/VirusTotalPanel.jsx` — detection ratio with progress bar, flagged engine list
+- `frontend/src/components/results/BlacklistPanel.jsx` — grid of 4 sources, clean/flagged status chips
+- `frontend/src/components/results/MLPredictionPanel.jsx` — confidence progress bar, "not trained" state
+- `frontend/src/components/results/GeoPanel.jsx` — country flag emoji, city/ISP/ASN grid; only renders for ip type
+- `frontend/src/components/results/WhoisPanel.jsx` — registrar/dates/nameservers; only renders for domain type with data
+- `frontend/src/components/results/RecommendationsPanel.jsx` — cyan numbered circles, analyst bullet list
+- `frontend/src/pages/Home.jsx` — full rewrite: hero, ScanBar with mono font + cyan focus border, IocTypeBadge below input, scan button with spinner, recent 3 scans as quick-links, error inline display
+- `frontend/src/pages/Results.jsx` — full rewrite: sticky topbar (IoC value + badges + copy/share), 9 result panels with staggered fade-in, LoadingSkeleton blocks, ErrorState for 404/failures
+- `frontend/src/index.css` — added `@keyframes spin` for button/loader spinner
+
+### What Works
+- ✅ Build clean: npm run build — 0 errors, 97 modules, 293kB JS
+- ✅ Frontend HTTP 200 at localhost:5173
+- ✅ Backend: POST /api/scan (IP/hash/domain) → HTTP 200
+- ✅ GET /api/scan/{scan_id} → HTTP 200 with stored result
+- ✅ GET /api/scan/invalid-id → HTTP 404 (ErrorState shown on Results page)
+- ✅ GET /api/scans/recent?limit=3 → 3 most recent
+- ✅ All colors via CSS variables — zero hardcoded hex in new component files
+- ✅ JetBrains Mono on all IoC values/hashes/IPs
+- ✅ GeoPanel only renders for ip type; WhoisPanel only for domain type with data
+- ✅ OTXPanel collapsible; auto-expanded if found=true
+
+### What's Pending / Skipped
+- Live scan flow (type → scan → navigate to results) requires a browser test; sandbox network blocks external API calls so severity will show "clean" until run locally with real API keys
+- GeoPanel and WhoisPanel will show real data locally (ip-api.com and WHOIS blocked in sandbox)
+
+### Known Issues
+- None
+
+### Mid-Execution Decisions
+- Branch: same `claude/trusting-dirac-V4y3q` per system constraint
+- `useAnimStyle` defined as regular function (not a hook) inside Results.jsx since it's just returning a static style object — no state or effects, so no React rules violation
+- IocTypeBadge uses CSS variable references in template literals (`${color}22`, `${color}44`) for bg/border opacity since CSS variables can't be directly alpha-modified in all contexts
+- ScanningState spinner uses inline `<style>` tag for `@keyframes spin` as backup — global one now added to index.css
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Phase 4: Dashboard page — LiveTicker, StatCard×4, SeverityDonut, IocTypeBar, ActivityLine, FeedHealthWidget, RecentScansTable. Backend: implement all 5 dashboard endpoints + feeds router GET/refresh.
 
 ---
 
