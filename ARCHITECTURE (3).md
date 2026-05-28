@@ -80,6 +80,7 @@ CTI-Aggregator/
 │   │   ├── ioc_detector.py            # Auto-detect IoC type from raw string
 │   │   ├── otx_service.py             # AlienVault OTX API calls
 │   │   ├── abusech_service.py         # URLhaus + MalwareBazaar API calls
+│   │   ├── vt_service.py              # VirusTotal API integration
 │   │   ├── geo_service.py             # ip-api.com geolocation (IP only)
 │   │   ├── whois_service.py           # python-whois WHOIS lookup (domain only)
 │   │   ├── aggregator_service.py      # Orchestrates all services for one IoC scan
@@ -141,6 +142,7 @@ CTI-Aggregator/
             │   ├── ThreatOverviewCard.jsx    # Top card: severity, score, IoC value, share
             │   ├── OTXPanel.jsx              # OTX pulse count, tags, categories
             │   ├── AbuseChPanel.jsx          # URLhaus + MalwareBazaar hits
+            │   ├── VTPanel.jsx               # VirusTotal detection ratio (e.g. 12/72 engines)
             │   ├── BlacklistPanel.jsx        # Blacklist status grid (found/not found)
             │   ├── MLPredictionPanel.jsx     # RF prediction + confidence bar
             │   ├── GeoPanel.jsx              # Country, ASN, ISP (IP only)
@@ -225,7 +227,7 @@ One row per feed per scan. Allows per-feed breakdown in the result panels.
 CREATE TABLE feed_results (
     id              INTEGER     PRIMARY KEY AUTOINCREMENT,
     scan_result_id  INTEGER     NOT NULL REFERENCES scan_results(id) ON DELETE CASCADE,
-    feed_name       TEXT        NOT NULL,   -- 'otx'|'urlhaus'|'malwarebazaar'|'geo'|'whois'
+    feed_name       TEXT        NOT NULL,   -- 'otx'|'urlhaus'|'malwarebazaar'|'virustotal'|'geo'|'whois'
     found           BOOLEAN     NOT NULL DEFAULT FALSE,
     threat_tags     TEXT,                   -- comma-separated tags from feed
     raw_data        TEXT        NOT NULL,   -- full JSON response from feed
@@ -760,6 +762,7 @@ Results.jsx renders all panels from response data
 ```
 DATABASE_URL=sqlite:///./cti_aggregator.db
 OTX_API_KEY=your_otx_api_key_here
+VT_API_KEY=your_virustotal_api_key_here
 CORS_ORIGINS=http://localhost:5173
 ```
 
@@ -772,5 +775,6 @@ VITE_API_BASE_URL=http://localhost:8000
 ```
 DATABASE_URL=sqlite:///./cti_aggregator.db
 OTX_API_KEY=REPLACE_WITH_YOUR_OTX_KEY
+VT_API_KEY=REPLACE_WITH_YOUR_VT_KEY
 CORS_ORIGINS=http://localhost:5173
 ```

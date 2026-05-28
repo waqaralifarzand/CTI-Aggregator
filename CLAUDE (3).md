@@ -63,8 +63,9 @@ A web-based cyber threat intelligence platform that allows security analysts to 
 | Abuse.ch MalwareBazaar | https://mb-api.abuse.ch/api/v1 | File Hash (MD5, SHA256) |
 | ip-api.com | http://ip-api.com/json (free tier) | IP Geolocation |
 | WHOIS (python-whois) | Local library lookup | Domain registration data |
+| VirusTotal | https://www.virustotal.com/api/v3 | IP, Domain, Hash | Key: from `VT_API_KEY` env var |
 
-No paid APIs. No API keys required except OTX (free registration).
+No paid APIs. No API keys required except OTX (free registration) and VirusTotal (free registration, 4 req/min limit).
 
 ---
 
