@@ -6,6 +6,8 @@ import BulkResultsTable from '../components/bulk/BulkResultsTable'
 import { uploadBulkScan, getBulkJob } from '../api/client'
 
 export default function Bulk() {
+  useEffect(() => { document.title = 'Bulk Scanner — CTI Aggregator' }, [])
+
   const [jobId, setJobId] = useState(null)
   const [job, setJob] = useState(null)
   const [uploading, setUploading] = useState(false)

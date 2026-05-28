@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import FilterBar from '../components/reports/FilterBar'
 import ReportsTable from '../components/reports/ReportsTable'
@@ -21,6 +21,8 @@ export default function Reports() {
     exportCSV,
     exporting,
   } = useReports()
+
+  useEffect(() => { document.title = 'Scan History — CTI Aggregator' }, [])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

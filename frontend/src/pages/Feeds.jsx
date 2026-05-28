@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import FeedCard from '../components/feeds/FeedCard'
 import LoadingSkeleton from '../components/shared/LoadingSkeleton'
@@ -24,7 +24,10 @@ export default function Feeds() {
     }
   }
 
-  useEffect(() => { fetchFeeds() }, [])
+  useEffect(() => {
+    document.title = 'Feed Manager — CTI Aggregator'
+    fetchFeeds()
+  }, [])
 
   return (
     <PageWrapper>

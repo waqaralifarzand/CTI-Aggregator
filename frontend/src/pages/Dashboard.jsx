@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import PageWrapper from '../components/layout/PageWrapper'
 import LiveTicker from '../components/dashboard/LiveTicker'
 import StatCard from '../components/dashboard/StatCard'
@@ -8,6 +8,8 @@ import ActivityLine from '../components/dashboard/ActivityLine'
 import RecentScansTable from '../components/dashboard/RecentScansTable'
 import FeedHealthWidget from '../components/dashboard/FeedHealthWidget'
 import LoadingSkeleton from '../components/shared/LoadingSkeleton'
+import EmptyState from '../components/shared/EmptyState'
+import ErrorState from '../components/shared/ErrorState'
 import useDashboard from '../hooks/useDashboard'
 
 const cardStyle = {
@@ -18,18 +20,21 @@ const cardStyle = {
 
 export default function Dashboard() {
   const {
-    stats, statsLoading,
+    stats, statsLoading, statsError,
     activity, activityLoading,
     severityBreakdown, iocBreakdown, chartsLoading,
     recentScans, recentLoading,
     feeds,
   } = useDashboard()
 
+  useEffect(() => { document.title = 'Dashboard — CTI Aggregator' }, [])
+
+  const noData = !statsLoading && !statsError && (stats?.total_scans ?? 0) === 0
+
   return (
     <div>
       <LiveTicker />
       <PageWrapper>
-        {/* Page title */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '3px' }}>Threat intelligence overview</p>
@@ -39,6 +44,10 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
           {statsLoading ? (
             Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height="100px" borderRadius="10px" />)
+          ) : statsError ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <ErrorState message="Failed to load statistics" />
+            </div>
           ) : (
             <>
               <StatCard label="Total Scans" value={stats?.total_scans ?? 0}
@@ -56,9 +65,9 @@ export default function Dashboard() {
         {/* Charts row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
           {[
-            { title: 'Severity Breakdown', component: <SeverityDonut data={severityBreakdown} /> },
-            { title: 'IoC Types', component: <IocTypeBar data={iocBreakdown} /> },
-            { title: '7-Day Activity', component: <ActivityLine data={activity} /> },
+            { title: 'Severity Breakdown', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <SeverityDonut data={severityBreakdown} /> },
+            { title: 'IoC Types', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <IocTypeBar data={iocBreakdown} /> },
+            { title: '7-Day Activity', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <ActivityLine data={activity} /> },
           ].map(({ title, component }) => (
             <div key={title} style={{ ...cardStyle, padding: '20px' }}>
               <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -71,7 +80,6 @@ export default function Dashboard() {
 
         {/* Bottom row */}
         <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '16px' }}>
-          {/* Feed health */}
           <div style={{ ...cardStyle, padding: '20px' }}>
             <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Feed Health
@@ -84,7 +92,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Recent scans */}
           <div style={cardStyle}>
             <div style={{ padding: '20px 20px 0' }}>
               <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -93,6 +100,8 @@ export default function Dashboard() {
             </div>
             {recentLoading ? (
               <div style={{ padding: '20px' }}><LoadingSkeleton height="160px" /></div>
+            ) : noData ? (
+              <EmptyState message="No scans yet" subtext="Run your first scan from the Scanner page" />
             ) : (
               <RecentScansTable scans={recentScans} />
             )}

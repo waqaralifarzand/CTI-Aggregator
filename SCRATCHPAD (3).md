@@ -291,5 +291,45 @@
 
 ---
 
-## Phase 8 — Polish: Skeletons, Error States, README, Final Cleanup
-*(To be filled by Claude Code after Phase 8 execution)*
+## Phase 8 — Polish: Error States, document.title, README, Final Cleanup
+**Date:** 2026-05-28
+**Branch:** phase-8-polish
+**Status:** ✅ Complete
+
+### What Was Built
+- `frontend/src/pages/Home.jsx` — added `document.title`, added `RecentScansQuickLinks` component (shows last 3 scans as quick-access links, silently hidden on error)
+- `frontend/src/pages/Results.jsx` — added `document.title`, replaced generic ErrorState with `ScanNotFound` inline component showing "Scan not found or no longer available." + "Back to Scanner" link, separate `notFound` state for 404 vs network error
+- `frontend/src/pages/Dashboard.jsx` — added `document.title`, `statsError` renders ErrorState in stat card grid area, `noData` flag shows EmptyState in charts + RecentScansTable when 0 total_scans
+- `frontend/src/pages/Reports.jsx` — added `document.title`
+- `frontend/src/pages/Feeds.jsx` — added `document.title`
+- `frontend/src/pages/MLInsights.jsx` — added `document.title`
+- `frontend/src/pages/Bulk.jsx` — added `document.title`
+- `frontend/src/components/layout/Sidebar.jsx` — fixed `onMouseLeave` handler (was empty/no-op, leaving stale hover color); now correctly resets color/background for non-active items using `aria-current` attribute
+- `backend/main.py` — removed `print()` statement from startup feed seeding
+- `backend/.env.example` — added `VT_API_KEY` entry
+- `README.md` — complete rewrite: prerequisites, setup steps, first use, ML training instructions, bulk scan format, project structure, academic context
+- `PHASES (3).md` — all 8 phases marked ✅ Complete
+- `SCRATCHPAD (3).md` — Phase 8 entry added
+
+### What Works
+- All 7 pages set correct `document.title` on mount
+- Results page shows "Back to Scanner" link instead of generic error for 404 scans
+- Dashboard shows EmptyState inside chart/table areas when DB has 0 scans; statsError shows ErrorState in stat grid without crashing other sections
+- Home page shows last 3 scans as quick-access links (hidden silently if fetch fails or no scans yet)
+- Sidebar hover state correctly resets on mouse leave
+- `npm run build` passes with zero errors
+
+### Known Issues
+- None
+
+### Mid-Execution Decisions
+- `ScanNotFound` implemented as inline component inside Results.jsx (not a separate file) — it's only used once
+- Dashboard `noData` check uses `stats?.total_scans === 0` which shows EmptyState even when charts are loading; guarded by `!statsLoading && !statsError` check
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Project complete. All 8 phases done.

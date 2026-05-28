@@ -27,7 +27,10 @@ export default function MLInsights() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    document.title = 'ML Insights — CTI Aggregator'
+    fetchData()
+  }, [])
 
   const modelTrained = metrics?.model_trained === true
 

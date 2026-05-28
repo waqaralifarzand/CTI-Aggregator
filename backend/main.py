@@ -53,7 +53,6 @@ def _init_db():
         db.commit()
     except Exception as exc:
         db.rollback()
-        print(f"[startup] Feed status init warning: {exc}")
     finally:
         db.close()
 

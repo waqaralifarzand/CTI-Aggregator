@@ -13,23 +13,65 @@ import RecommendationsPanel from '../components/results/RecommendationsPanel'
 import SeverityBadge from '../components/shared/SeverityBadge'
 import CopyButton from '../components/shared/CopyButton'
 import LoadingSkeleton from '../components/shared/LoadingSkeleton'
-import ErrorState from '../components/shared/ErrorState'
+
+function ScanNotFound({ message }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+        style={{ margin: '0 auto 16px', display: 'block', color: 'var(--critical)' }}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 8px' }}>
+        {message || 'Scan not found or no longer available.'}
+      </p>
+      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 24px' }}>
+        The scan may have expired or the link may be incorrect.
+      </p>
+      <Link to="/" style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        color: 'var(--accent)', fontSize: '13px', fontWeight: '500',
+        textDecoration: 'none',
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+        </svg>
+        Back to Scanner
+      </Link>
+    </div>
+  )
+}
 
 export default function Results() {
   const { scanId } = useParams()
   const [scan, setScan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    document.title = 'Scan Results — CTI Aggregator'
+  }, [])
 
   const fetchScan = async () => {
     setLoading(true)
     setError(null)
+    setNotFound(false)
     try {
       const res = await getScan(scanId)
       if (res.data.success) setScan(res.data.data)
-      else setError(res.data.error || 'Scan not found')
+      else {
+        setNotFound(true)
+        setError(res.data.error || 'Scan not found or no longer available.')
+      }
     } catch (err) {
-      setError(err.response?.status === 404 ? 'Scan not found.' : 'Failed to load scan results.')
+      if (err.response?.status === 404) {
+        setNotFound(true)
+        setError('Scan not found or no longer available.')
+      } else {
+        setError('Failed to load scan results.')
+      }
     } finally {
       setLoading(false)
     }
@@ -86,12 +128,15 @@ export default function Results() {
           <LoadingSkeleton height="80px" borderRadius="10px" />
           <LoadingSkeleton height="80px" borderRadius="10px" />
           <LoadingSkeleton height="120px" borderRadius="10px" />
+          <LoadingSkeleton height="80px" borderRadius="10px" />
         </div>
       )}
 
-      {error && <ErrorState message={error} onRetry={fetchScan} />}
+      {!loading && (notFound || error) && (
+        <ScanNotFound message={error} />
+      )}
 
-      {scan && !loading && (
+      {scan && !loading && !error && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <ThreatOverviewCard scan={scan} />
           <OTXPanel otx={scan.feeds?.otx} />

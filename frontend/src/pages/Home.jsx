@@ -1,12 +1,56 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import ScanBar from '../components/scanner/ScanBar'
 import ScanningState from '../components/scanner/ScanningState'
 import useScan from '../hooks/useScan'
+import { getRecentScans } from '../api/client'
+import SeverityBadge from '../components/shared/SeverityBadge'
+
+function RecentScansQuickLinks() {
+  const [scans, setScans] = useState([])
+
+  useEffect(() => {
+    getRecentScans(3)
+      .then(res => {
+        if (res.data.success) setScans(res.data.data || [])
+      })
+      .catch(() => {})
+  }, [])
+
+  if (!scans.length) return null
+
+  return (
+    <div style={{ marginTop: '24px' }}>
+      <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+        Recent Scans
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {scans.map(s => (
+          <Link
+            key={s.scan_id}
+            to={`/results/${s.scan_id}`}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: '6px', padding: '8px 12px', textDecoration: 'none',
+            }}
+          >
+            <span className="mono" style={{ fontSize: '12px', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {s.ioc_value?.length > 40 ? s.ioc_value.slice(0, 40) + '…' : s.ioc_value}
+            </span>
+            <SeverityBadge severity={s.overall_severity} />
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Home() {
   const navigate = useNavigate()
   const { loading, error, submitScan } = useScan()
+
+  useEffect(() => { document.title = 'CTI Aggregator' }, [])
 
   const handleScan = async (value) => {
     const id = await submitScan(value)
@@ -107,6 +151,8 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        <RecentScansQuickLinks />
       </div>
     </div>
   )

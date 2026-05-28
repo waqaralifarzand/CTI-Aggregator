@@ -10,14 +10,14 @@
 
 | Phase | Title | Status |
 |---|---|---|
-| Phase 1 | Repo Setup — Backend + Frontend Skeleton | ⬜ Not Started |
-| Phase 2 | Feed Integration — IoC Detection + OTX + Abuse.ch + Scan Endpoint | ⬜ Not Started |
-| Phase 3 | Home Page + Results Page UI | ⬜ Not Started |
-| Phase 4 | Dashboard Page — Stats, Charts, Ticker | ⬜ Not Started |
-| Phase 5 | Reports Page + CSV Export | ⬜ Not Started |
-| Phase 6 | ML Pipeline — Training + Prediction + Endpoint | ⬜ Not Started |
-| Phase 7 | ML Insights + Feed Manager + Bulk Scanner | ⬜ Not Started |
-| Phase 8 | Polish — Skeletons, Error States, README, Final Cleanup | ⬜ Not Started |
+| Phase 1 | Repo Setup — Backend + Frontend Skeleton | ✅ Complete |
+| Phase 2 | Feed Integration — IoC Detection + OTX + Abuse.ch + Scan Endpoint | ✅ Complete |
+| Phase 3 | Home Page + Results Page UI | ✅ Complete |
+| Phase 4 | Dashboard Page — Stats, Charts, Ticker | ✅ Complete |
+| Phase 5 | Reports Page + CSV Export | ✅ Complete |
+| Phase 6 | ML Pipeline — Training + Prediction + Endpoint | ✅ Complete |
+| Phase 7 | ML Insights + Feed Manager + Bulk Scanner | ✅ Complete |
+| Phase 8 | Polish — Skeletons, Error States, README, Final Cleanup | ✅ Complete |
 
 ---
 

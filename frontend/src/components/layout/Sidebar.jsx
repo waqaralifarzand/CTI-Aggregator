@@ -137,14 +137,17 @@ export default function Sidebar() {
               textDecoration: 'none',
             })}
             onMouseEnter={(e) => {
-              if (!e.currentTarget.classList.contains('active')) {
-                e.currentTarget.style.color = 'var(--text-primary)'
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+              const el = e.currentTarget
+              if (el.getAttribute('aria-current') !== 'page') {
+                el.style.color = 'var(--text-primary)'
+                el.style.background = 'rgba(255,255,255,0.03)'
               }
             }}
             onMouseLeave={(e) => {
-              if (!e.currentTarget.querySelector('[aria-current]')) {
-                // Reset handled by NavLink
+              const el = e.currentTarget
+              if (el.getAttribute('aria-current') !== 'page') {
+                el.style.color = ''
+                el.style.background = ''
               }
             }}
           >
