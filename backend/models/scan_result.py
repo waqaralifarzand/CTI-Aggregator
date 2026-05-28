@@ -16,6 +16,7 @@ class ScanResult(Base):
     threat_score = Column(Integer, default=0)
     scanned_at = Column(DateTime, default=datetime.utcnow)
     raw_summary = Column(Text, nullable=False)  # JSON blob
+    bulk_job_id = Column(Text, nullable=True, index=True)
 
     ioc = relationship("IoC", backref="scan_results")
     feed_results = relationship(

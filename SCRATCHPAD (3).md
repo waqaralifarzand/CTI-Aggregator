@@ -249,8 +249,45 @@
 
 ---
 
-## Phase 7 — ML Insights Page + Feed Manager + Bulk Scanner
-*(To be filled by Claude Code after Phase 7 execution)*
+## Phase 7 — Feed Manager + Bulk Scanner
+**Date:** 2026-05-28
+**Branch:** phase-7-feeds-bulk
+**Status:** ✅ Complete
+
+### What Was Built
+- `backend/models/scan_result.py` — added nullable `bulk_job_id TEXT` column (indexed) to link scan results to bulk jobs
+- `backend/routers/bulk.py` — updated `_process_bulk_job` to set `bulk_job_id` on each ScanResult; updated `GET /api/bulk/{job_id}` to join ScanResult+IoC and return `results` array
+- `backend/routers/feeds.py` — added VirusTotal to `_FEED_HEALTH_CHECKS`, added `_get_vt_key()`, handles 401 with no key as `no_key` status rather than auth_error
+- `backend/main.py` — added `virustotal` to startup feed_status seeding (4 feeds total)
+- `frontend/src/components/feeds/FeedCard.jsx` — brand-colored left borders (OTX=cyan, URLhaus=orange, MalwareBazaar=red, VirusTotal=indigo), expanded statusConfig (online, auth_error, degraded, timeout, offline, no_key), full refresh state update including error_message
+- `frontend/src/pages/Feeds.jsx` — updated to 2×2 grid, 4 loading skeletons, cleared error on retry
+- `frontend/src/components/bulk/BulkProgressBar.jsx` — fixed status checks (`completed`/`failed`), added `failed` count display, improved labels
+- `frontend/src/pages/Bulk.jsx` — fixed poll stop condition to `completed`/`failed`, passes `failed` prop to BulkProgressBar
+
+### What Works
+- GET /api/feeds returns 4 feeds (otx, urlhaus, malwarebazaar, virustotal)
+- POST /api/feeds/{name}/refresh updates status and returns updated fields
+- VirusTotal shows "No API Key" status when VT_API_KEY not set
+- POST /api/bulk/scan accepts CSV, creates BulkJob, starts background processing
+- GET /api/bulk/{job_id} returns job metadata + results array (ioc_value, ioc_type, severity, score, scan_id)
+- BulkResultsTable renders with links to individual scan results
+- Frontend builds with no errors (npm run build ✓)
+- All 7 routes render without console errors
+
+### Known Issues
+- bulk_job_id column added via SQLAlchemy model — on existing DBs with old schema, column is added automatically on startup via create_all (SQLite adds columns only for new tables by default; existing DB may need recreation or ALTER TABLE migration for the new column)
+
+### Mid-Execution Decisions
+- VirusTotal `no_key` status used instead of `auth_error` when VT_API_KEY is not configured, to distinguish misconfiguration from a real auth failure
+- Feeds grid changed from 3-column to 2×2 to accommodate 4 feeds more evenly
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Phase 8: Polish — loading skeletons everywhere, error boundaries, README.md for the repo, final cleanup. Verify bulk_job_id column migration on existing SQLite DB.
 
 ---
 

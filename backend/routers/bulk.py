@@ -74,6 +74,7 @@ async def _process_bulk_job(job_id: str, ioc_values: list[str]):
                     threat_score=result["threat_score"],
                     scanned_at=result["scanned_at"],
                     raw_summary=raw_summary,
+                    bulk_job_id=job_id,
                 )
                 db.add(scan_result)
                 db.flush()
@@ -179,10 +180,31 @@ async def bulk_scan(
 
 @router.get("/bulk/{job_id}")
 def get_bulk_job(job_id: str, db: Session = Depends(get_db)):
-    """Return the status of a bulk scan job."""
+    """Return the status and results of a bulk scan job."""
     job = db.query(BulkJob).filter(BulkJob.job_id == job_id).first()
     if job is None:
         return err("Job not found", status_code=404)
+
+    # Fetch associated scan results
+    rows = (
+        db.query(ScanResult, IoC)
+        .join(IoC, ScanResult.ioc_id == IoC.id)
+        .filter(ScanResult.bulk_job_id == job_id)
+        .order_by(ScanResult.scanned_at.asc())
+        .all()
+    )
+
+    results = [
+        {
+            "scan_id": sr.scan_id,
+            "ioc_value": ioc.value,
+            "ioc_type": ioc.type,
+            "overall_severity": sr.overall_severity,
+            "ml_severity": sr.ml_severity,
+            "threat_score": sr.threat_score,
+        }
+        for sr, ioc in rows
+    ]
 
     return ok(
         {
@@ -193,6 +215,7 @@ def get_bulk_job(job_id: str, db: Session = Depends(get_db)):
             "status": job.status,
             "created_at": job.created_at.isoformat() if job.created_at else None,
             "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+            "results": results,
         }
     )
 

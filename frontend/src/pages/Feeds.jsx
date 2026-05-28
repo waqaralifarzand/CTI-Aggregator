@@ -12,6 +12,7 @@ export default function Feeds() {
 
   const fetchFeeds = async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await getFeeds()
       if (res.data.success) setFeeds(res.data.data || [])
@@ -35,13 +36,13 @@ export default function Feeds() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {Array.from({ length: 3 }).map((_, i) => <LoadingSkeleton key={i} height="160px" borderRadius="10px" />)}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          {Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height="170px" borderRadius="10px" />)}
         </div>
       ) : error ? (
         <ErrorState message={error} onRetry={fetchFeeds} />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
           {feeds.map(f => <FeedCard key={f.feed_name} feed={f} />)}
         </div>
       )}

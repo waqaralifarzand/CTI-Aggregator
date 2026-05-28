@@ -40,7 +40,7 @@ export default function Bulk() {
         const res = await getBulkJob(jobId)
         if (res.data.success) {
           setJob(res.data.data)
-          if (res.data.data.status === 'done' || res.data.data.status === 'error') {
+          if (res.data.data.status === 'completed' || res.data.data.status === 'failed') {
             clearInterval(pollRef.current)
           }
         }
@@ -110,7 +110,7 @@ malware.example.com
 
       {job && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <BulkProgressBar completed={job.completed} total={job.total} status={job.status} />
+          <BulkProgressBar completed={job.completed} total={job.total} status={job.status} failed={job.failed} />
           <BulkResultsTable results={job.results || []} />
         </div>
       )}

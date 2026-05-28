@@ -37,7 +37,7 @@ def _init_db():
 
     db = SessionLocal()
     try:
-        for feed_name in ("otx", "urlhaus", "malwarebazaar"):
+        for feed_name in ("otx", "urlhaus", "malwarebazaar", "virustotal"):
             existing = db.query(FeedStatus).filter(FeedStatus.feed_name == feed_name).first()
             if existing is None:
                 db.add(

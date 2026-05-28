@@ -27,12 +27,22 @@ _FEED_HEALTH_CHECKS = {
         "url": "https://mb-api.abuse.ch/api/v1/",
         "data": {"query": "get_info", "hash": "aabbccdd"},
     },
+    "virustotal": {
+        "method": "GET",
+        "url": "https://www.virustotal.com/api/v3/ip_addresses/8.8.8.8",
+        "headers_fn": lambda: {"x-apikey": _get_vt_key()},
+    },
 }
 
 
 def _get_otx_key() -> str:
     import os
     return os.getenv("OTX_API_KEY", "")
+
+
+def _get_vt_key() -> str:
+    import os
+    return os.getenv("VT_API_KEY", "")
 
 
 @router.get("/feeds")
@@ -105,8 +115,12 @@ async def refresh_feed(feed_name: str, db: Session = Depends(get_db)):
             except Exception:
                 pass
         elif resp.status_code == 401:
-            status = "auth_error"
-            error_message = "Authentication failed — check API key"
+            if feed_name == "virustotal" and not _get_vt_key():
+                status = "no_key"
+                error_message = "No VT_API_KEY configured"
+            else:
+                status = "auth_error"
+                error_message = "Authentication failed — check API key"
         elif resp.status_code == 404:
             status = "online"  # 404 on a hash/host just means not found, service is up
         else:

@@ -1,9 +1,11 @@
 import React from 'react'
 
-export default function BulkProgressBar({ completed, total, status }) {
+export default function BulkProgressBar({ completed, total, status, failed }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+  const isDone = status === 'completed'
+  const isFailed = status === 'failed'
 
-  const statusColor = status === 'done' ? 'var(--clean)' : status === 'error' ? 'var(--critical)' : 'var(--accent)'
+  const barColor = isFailed ? 'var(--critical)' : isDone ? 'var(--clean)' : 'var(--accent)'
 
   return (
     <div style={{
@@ -12,19 +14,26 @@ export default function BulkProgressBar({ completed, total, status }) {
       borderRadius: '10px',
       padding: '20px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
-          {status === 'done' ? 'Scan Complete' : 'Scanning...'}
+          {isFailed ? 'Scan Failed' : isDone ? 'Scan Complete' : 'Scanning…'}
         </span>
-        <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-          {completed} of {total} scanned
-        </span>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          {failed > 0 && (
+            <span style={{ fontSize: '12px', color: 'var(--critical)' }}>
+              {failed} failed
+            </span>
+          )}
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            {completed} of {total} scanned
+          </span>
+        </div>
       </div>
       <div style={{ height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
         <div style={{
           height: '100%',
           width: `${pct}%`,
-          background: statusColor,
+          background: barColor,
           borderRadius: '4px',
           transition: 'width 0.3s ease',
         }} />
