@@ -9,6 +9,7 @@ dist/
 build/
 *.pkl
 *.db
+backend/ml/model_meta.json
 
 # Environment
 .env

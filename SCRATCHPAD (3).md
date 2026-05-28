@@ -196,7 +196,56 @@
 ---
 
 ## Phase 6 — ML Pipeline: Training + Prediction + Endpoint
-*(To be filled by Claude Code after Phase 6 execution)*
+**Date:** 2026-05-28
+**Branch:** phase-6-ml-pipeline
+**Status:** ✅ Complete
+
+### What Was Built
+- `backend/ml/trainer.py` — rewritten to use sklearn `LabelEncoder` (fit on all 5 classes), saves `model.pkl` + `label_encoder.pkl` + `model_meta.json`, added `load_model() -> (model, encoder) | None`
+- `backend/ml/features.py` — added `build_training_dataframe(db_session) -> pd.DataFrame` (queries scan_results + iocs, reconstructs scan_data from raw_summary, returns 10-feature matrix + label column)
+- `backend/services/ml_service.py` — rewrote to: load both pkl files, use `label_encoder.inverse_transform()` for predictions, `get_metrics()` reads `model_meta.json` and always includes `model_trained` bool, added `_bust_cache()` for post-retrain invalidation
+- `backend/routers/ml.py` — `POST /api/ml/train` now checks scan count first (returns HTTP 400 if < 50), returns `training_samples` count, calls `_bust_cache()` after background task finishes
+- `backend/seed_ml_data.py` — standalone seed script with 52 IoC entries (IPs/domains/hashes, mix of all 5 severities), writes directly to DB, safe to run multiple times
+- `frontend/src/components/ml/MetricCard.jsx` — added color-coded top border (green ≥ 0.85, yellow ≥ 0.70, red < 0.70)
+- `frontend/src/components/ml/RetrainButton.jsx` — 4-second toast notifications (green success / red error), toast includes training_samples count
+- `frontend/src/pages/MLInsights.jsx` — shows empty state with inline RetrainButton when not trained; when trained: 4 MetricCards + last_trained/training_samples in header + full-width FeatureImportanceChart
+- `.gitignore` — added `backend/ml/model_meta.json`
+
+### What Works (verified with curl + build)
+- `POST /api/ml/train` with 78 scans → `{ success: true, data: { message, training_samples: 78 } }`
+- Background task completes in ~5s → `model.pkl`, `label_encoder.pkl`, `model_meta.json` created in `backend/ml/`
+- `GET /api/ml/metrics` → `{ model_trained: true, accuracy: 0.875, precision: 0.888, recall: 0.875, f1_score: 0.872, last_trained, training_samples: 78 }`
+- `GET /api/ml/features` → 10 features sorted by importance (threat_score=0.548, otx_pulse_count=0.252, ...)
+- `POST /api/scan {"value": "..."}` → includes `ml_severity` + `ml_confidence` (not null)
+- `model.pkl`, `label_encoder.pkl`, `model_meta.json` all gitignored correctly — don't appear in `git status`
+- `npm run build` passes with no errors
+
+### Seeding Details
+- Seeded 52 additional scan results via `seed_ml_data.py` (direct DB write, no HTTP)
+- Total scan_results in DB after seeding: **78**
+- Severity distribution: ~25% critical, ~20% high, ~20% medium, ~15% low, ~20% clean
+- Script kept in repo as a utility (`backend/seed_ml_data.py`) — not imported by main app
+
+### ML Model Results
+- Model: `RandomForestClassifier(n_estimators=100, random_state=42)`
+- Training samples: 78 (80/20 split → 62 train, 16 test)
+- **Accuracy: 87.5%**
+- Precision: 88.75% (weighted)
+- Recall: 87.5% (weighted)
+- F1-Score: 87.2% (weighted)
+- Top features: threat_score (54.8%), otx_pulse_count (25.2%), otx_found (5.1%)
+
+### Known Issues
+- ml_severity from live OTX/Abuse.ch scans returns "clean" for IPs that are actually clean (Google DNS 8.8.8.8) — this is correct behavior
+- Model is simple RF on seeded data; real-world accuracy will vary once actual feed data populates the DB
+
+### Live URLs / Ports
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
+
+### Next Session Picks Up At
+- Phase 7: ML Insights page, Feed Manager, and Bulk Scanner are all already scaffolded — wire remaining stubs. Key tasks: verify bulk scan background task processes IoCs sequentially, FeedCard refresh updates status in real time, FeatureImportanceChart shows bars with value labels.
 
 ---
 

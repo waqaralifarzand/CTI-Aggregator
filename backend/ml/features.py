@@ -1,3 +1,6 @@
+import json
+import pandas as pd
+
 FEATURE_NAMES = [
     "otx_pulse_count",
     "otx_found",
@@ -58,3 +61,41 @@ def extract_features(scan_data: dict) -> list:
         otx_has_c2_tag,
         otx_has_malware_tag,
     ]
+
+
+def build_training_dataframe(db_session) -> pd.DataFrame:
+    """Build a training DataFrame from the database.
+
+    Joins scan_results with iocs, reconstructs scan_data from raw_summary,
+    extracts the 10-feature vector, and returns a DataFrame with feature columns
+    plus a 'label' column (overall_severity string).
+    """
+    from models.scan_result import ScanResult
+    from models.ioc import IoC
+
+    scan_results = (
+        db_session.query(ScanResult)
+        .join(IoC, ScanResult.ioc_id == IoC.id)
+        .all()
+    )
+
+    rows = []
+    for sr in scan_results:
+        if not sr.overall_severity:
+            continue
+        try:
+            raw = json.loads(sr.raw_summary)
+        except (ValueError, TypeError):
+            raw = {}
+
+        scan_data = {
+            "ioc_type": sr.ioc.type if sr.ioc else "",
+            "threat_score": sr.threat_score or 0,
+            "feeds": raw.get("feeds", {}),
+        }
+        features = extract_features(scan_data)
+        row = dict(zip(FEATURE_NAMES, features))
+        row["label"] = sr.overall_severity
+        rows.append(row)
+
+    return pd.DataFrame(rows)
