@@ -1,50 +1,59 @@
-import asyncio
 import whois
 
 
-def _do_whois(domain: str) -> dict | None:
+def query_whois(domain: str) -> dict | None:
+    """Query WHOIS information for a domain.
+
+    Returns a normalized dict with registrar, dates, name servers, and status,
+    or None if the query fails or no data is available.
+    """
     try:
         w = whois.whois(domain)
-        if not w or not w.domain_name:
+
+        if w is None:
             return None
 
-        def _date_str(d):
-            if d is None:
-                return None
-            if isinstance(d, list):
-                d = d[0]
-            return str(d)
+        # Normalize creation_date — may be a list or single value
+        creation_date = w.creation_date
+        if isinstance(creation_date, list):
+            creation_date = creation_date[0]
+        if creation_date is not None:
+            try:
+                creation_date = creation_date.isoformat()
+            except AttributeError:
+                creation_date = str(creation_date)
 
+        # Normalize expiration_date
+        expiration_date = w.expiration_date
+        if isinstance(expiration_date, list):
+            expiration_date = expiration_date[0]
+        if expiration_date is not None:
+            try:
+                expiration_date = expiration_date.isoformat()
+            except AttributeError:
+                expiration_date = str(expiration_date)
+
+        # Normalize name_servers
         name_servers = w.name_servers
-        if isinstance(name_servers, list):
-            name_servers = [ns.lower() for ns in name_servers if ns][:4]
-        elif isinstance(name_servers, str):
-            name_servers = [name_servers.lower()]
-        else:
-            name_servers = []
+        if isinstance(name_servers, str):
+            name_servers = [name_servers]
+        elif name_servers is not None:
+            name_servers = [str(ns).lower() for ns in name_servers]
 
+        # Normalize status
         status = w.status
-        if isinstance(status, list):
-            status = status[0] if status else None
+        if isinstance(status, str):
+            status = [status]
+        elif status is not None:
+            status = [str(s) for s in status]
 
         return {
-            "registrar": w.registrar,
-            "creation_date": _date_str(w.creation_date),
-            "expiration_date": _date_str(w.expiration_date),
-            "name_servers": name_servers,
-            "status": status,
+            "registrar": w.registrar or None,
+            "creation_date": creation_date,
+            "expiration_date": expiration_date,
+            "name_servers": name_servers or [],
+            "status": status or [],
         }
-    except Exception:
-        return None
 
-
-async def query_whois(domain: str) -> dict | None:
-    loop = asyncio.get_event_loop()
-    try:
-        result = await asyncio.wait_for(
-            loop.run_in_executor(None, _do_whois, domain),
-            timeout=10,
-        )
-        return result
     except Exception:
         return None

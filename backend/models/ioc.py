@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, Text, TIMESTAMP
-from sqlalchemy.sql import func
-from ..database import Base
+from datetime import datetime
+from sqlalchemy import Column, Integer, Text, DateTime
+from database import Base
 
 
 class IoC(Base):
@@ -8,7 +8,7 @@ class IoC(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     value = Column(Text, nullable=False, unique=True)
-    type = Column(Text, nullable=False)
-    first_seen = Column(TIMESTAMP, nullable=False, server_default=func.now())
-    last_seen = Column(TIMESTAMP, nullable=False, server_default=func.now())
-    scan_count = Column(Integer, nullable=False, default=1)
+    type = Column(Text, nullable=False)  # 'ip'|'domain'|'hash_md5'|'hash_sha256'|'hash_sha1'
+    first_seen = Column(DateTime, default=datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.utcnow)
+    scan_count = Column(Integer, default=1)

@@ -1,166 +1,153 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getScan } from '../api/client'
-import { SkeletonPanel } from '../components/shared/LoadingSkeleton'
-import ErrorState from '../components/shared/ErrorState'
-import SeverityBadge from '../components/shared/SeverityBadge'
-import CopyButton from '../components/shared/CopyButton'
-import ShareButton from '../components/shared/ShareButton'
-import IocTypeBadge from '../components/scanner/IocTypeBadge'
+import PageWrapper from '../components/layout/PageWrapper'
 import ThreatOverviewCard from '../components/results/ThreatOverviewCard'
 import OTXPanel from '../components/results/OTXPanel'
 import AbuseChPanel from '../components/results/AbuseChPanel'
-import VirusTotalPanel from '../components/results/VirusTotalPanel'
 import BlacklistPanel from '../components/results/BlacklistPanel'
 import MLPredictionPanel from '../components/results/MLPredictionPanel'
 import GeoPanel from '../components/results/GeoPanel'
 import WhoisPanel from '../components/results/WhoisPanel'
 import RecommendationsPanel from '../components/results/RecommendationsPanel'
+import SeverityBadge from '../components/shared/SeverityBadge'
+import CopyButton from '../components/shared/CopyButton'
+import LoadingSkeleton from '../components/shared/LoadingSkeleton'
 
-function useAnimStyle(index) {
-  return {
-    opacity: 1,
-    transform: 'translateY(0)',
-    transition: `opacity 0.3s ease ${index * 80}ms, transform 0.3s ease ${index * 80}ms`,
-  }
+function ScanNotFound({ message }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+        style={{ margin: '0 auto 16px', display: 'block', color: 'var(--critical)' }}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 8px' }}>
+        {message || 'Scan not found or no longer available.'}
+      </p>
+      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 24px' }}>
+        The scan may have expired or the link may be incorrect.
+      </p>
+      <Link to="/" style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        color: 'var(--accent)', fontSize: '13px', fontWeight: '500',
+        textDecoration: 'none',
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+        </svg>
+        Back to Scanner
+      </Link>
+    </div>
+  )
 }
 
 export default function Results() {
   const { scanId } = useParams()
-  const [data, setData] = useState(null)
+  const [scan, setScan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [notFound, setNotFound] = useState(false)
 
-  const loadScan = () => {
+  useEffect(() => {
+    document.title = 'Scan Results — CTI Aggregator'
+  }, [])
+
+  const fetchScan = async () => {
     setLoading(true)
     setError(null)
-    getScan(scanId)
-      .then(res => {
-        if (res.data?.success) {
-          setData(res.data.data)
-        } else {
-          setError(res.data?.error || 'Scan not found')
-        }
-      })
-      .catch(err => {
-        if (err.response?.status === 404) {
-          setError('Scan not found. This link may have expired or the ID is invalid.')
-        } else {
-          setError(err.message || 'Failed to load scan results')
-        }
-      })
-      .finally(() => setLoading(false))
+    setNotFound(false)
+    try {
+      const res = await getScan(scanId)
+      if (res.data.success) setScan(res.data.data)
+      else {
+        setNotFound(true)
+        setError(res.data.error || 'Scan not found or no longer available.')
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setNotFound(true)
+        setError('Scan not found or no longer available.')
+      } else {
+        setError('Failed to load scan results.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { loadScan() }, [scanId])
+  useEffect(() => { fetchScan() }, [scanId])
 
   return (
-    <div style={{
-      marginLeft: '240px',
-      minHeight: '100vh',
-      backgroundColor: 'var(--bg-primary)',
-    }}>
-      {/* Sticky top bar */}
+    <PageWrapper>
+      {/* Top bar */}
       <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        background: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border)',
-        padding: '12px 32px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        flexWrap: 'wrap',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '24px', flexWrap: 'wrap', gap: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-          <Link
-            to="/"
-            style={{
-              color: 'var(--text-muted)',
-              textDecoration: 'none',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            ← Scan Another
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+            </svg>
+            Scan another
           </Link>
-          <span style={{ color: 'var(--border)', flexShrink: 0 }}>|</span>
-          {data && (
+          {scan && (
             <>
-              <span style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '13px',
-                color: 'var(--text-primary)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}>
-                {data.ioc?.value}
+              <span style={{ color: 'var(--border)' }}>|</span>
+              <span className="mono" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                {scan.ioc?.value}
               </span>
-              <IocTypeBadge value={data.ioc?.value} />
-              <CopyButton text={data.ioc?.value} />
+              <CopyButton text={scan.ioc?.value || ''} />
+              {scan.overall_severity && <SeverityBadge severity={scan.overall_severity} />}
             </>
           )}
         </div>
+        {scan && (
+          <button
+            onClick={() => { navigator.clipboard.writeText(window.location.href) }}
+            style={{
+              background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)',
+              borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px',
+              display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            Share
+          </button>
+        )}
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {data && <SeverityBadge severity={data.overall_severity} size="md" />}
-          <ShareButton />
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <LoadingSkeleton height="110px" borderRadius="10px" />
+          <LoadingSkeleton height="80px" borderRadius="10px" />
+          <LoadingSkeleton height="80px" borderRadius="10px" />
+          <LoadingSkeleton height="120px" borderRadius="10px" />
+          <LoadingSkeleton height="80px" borderRadius="10px" />
         </div>
-      </div>
+      )}
 
-      {/* Main content */}
-      <div style={{ padding: '28px 32px', maxWidth: '860px' }}>
-        {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[...Array(6)].map((_, i) => <SkeletonPanel key={i} />)}
-          </div>
-        )}
+      {!loading && (notFound || error) && (
+        <ScanNotFound message={error} />
+      )}
 
-        {!loading && error && (
-          <div style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-          }}>
-            <ErrorState message={error} onRetry={loadScan} />
-          </div>
-        )}
-
-        {!loading && data && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <ThreatOverviewCard data={data} animStyle={useAnimStyle(0)} />
-            <OTXPanel otx={data.feeds?.otx} animStyle={useAnimStyle(1)} />
-            <AbuseChPanel
-              urlhaus={data.feeds?.urlhaus}
-              malwarebazaar={data.feeds?.malwarebazaar}
-              animStyle={useAnimStyle(2)}
-            />
-            <VirusTotalPanel vt={data.feeds?.virustotal} animStyle={useAnimStyle(3)} />
-            <BlacklistPanel blacklistStatus={data.blacklist_status} animStyle={useAnimStyle(4)} />
-            <MLPredictionPanel
-              mlSeverity={data.ml_severity}
-              mlConfidence={data.ml_confidence}
-              animStyle={useAnimStyle(5)}
-            />
-            {data.ioc?.type === 'ip' && data.feeds?.geo && (
-              <GeoPanel geo={data.feeds.geo} animStyle={useAnimStyle(6)} />
-            )}
-            {data.ioc?.type === 'domain' && data.feeds?.whois && (
-              <WhoisPanel whois={data.feeds.whois} animStyle={useAnimStyle(7)} />
-            )}
-            {data.recommendations?.length > 0 && (
-              <RecommendationsPanel recommendations={data.recommendations} animStyle={useAnimStyle(8)} />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+      {scan && !loading && !error && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <ThreatOverviewCard scan={scan} />
+          <OTXPanel otx={scan.feeds?.otx} />
+          <AbuseChPanel urlhaus={scan.feeds?.urlhaus} malwarebazaar={scan.feeds?.malwarebazaar} />
+          <BlacklistPanel blacklistStatus={scan.blacklist_status} />
+          <MLPredictionPanel mlSeverity={scan.ml_severity} mlConfidence={scan.ml_confidence} />
+          {scan.ioc?.type === 'ip' && <GeoPanel geo={scan.feeds?.geo} />}
+          {scan.ioc?.type === 'domain' && <WhoisPanel whois={scan.feeds?.whois} />}
+          <RecommendationsPanel recommendations={scan.recommendations} />
+        </div>
+      )}
+    </PageWrapper>
   )
 }

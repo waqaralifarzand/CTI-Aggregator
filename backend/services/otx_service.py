@@ -1,9 +1,12 @@
 import os
 import httpx
+from dotenv import load_dotenv
 
-OTX_BASE = "https://otx.alienvault.com/api/v1/indicators"
+load_dotenv()
 
-_TYPE_MAP = {
+OTX_BASE_URL = "https://otx.alienvault.com/api/v1/indicators"
+
+OTX_TYPE_MAP = {
     "ip": "IPv4",
     "domain": "domain",
     "hash_md5": "file",
@@ -13,55 +16,65 @@ _TYPE_MAP = {
 
 
 async def query_otx(ioc_value: str, ioc_type: str) -> dict:
+    """Query AlienVault OTX for threat intelligence on an IoC."""
     api_key = os.getenv("OTX_API_KEY", "")
-    otx_type = _TYPE_MAP.get(ioc_type)
-    if not otx_type:
-        return {"found": False, "error": "unsupported ioc type for OTX"}
+    otx_type = OTX_TYPE_MAP.get(ioc_type)
 
-    url = f"{OTX_BASE}/{otx_type}/{ioc_value}/general"
+    if not otx_type:
+        return {"found": False, "error": f"Unsupported IoC type for OTX: {ioc_type}"}
+
+    url = f"{OTX_BASE_URL}/{otx_type}/{ioc_value}/general"
     headers = {"X-OTX-API-KEY": api_key}
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(url, headers=headers)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(url, headers=headers)
 
-        if resp.status_code == 404:
-            return {"found": False, "pulse_count": 0, "threat_tags": [], "categories": [], "country": None, "raw_data": {}}
+        if response.status_code == 404:
+            return {"found": False}
 
-        resp.raise_for_status()
-        data = resp.json()
+        if response.status_code == 401:
+            return {"found": False, "error": "Invalid or missing OTX API key"}
 
-        pulse_info = data.get("pulse_info", {})
-        pulse_count = pulse_info.get("count", 0)
-        pulses = pulse_info.get("pulses", [])
+        if response.status_code != 200:
+            return {
+                "found": False,
+                "error": f"OTX returned HTTP {response.status_code}",
+            }
 
-        tags = []
+        data = response.json()
+
+        pulse_info = data.get("pulse_info", {}) or {}
+        pulses = pulse_info.get("pulses", []) or []
+        pulse_count = pulse_info.get("count", len(pulses))
+
+        # Extract threat tags from all pulses
+        threat_tags = []
         categories = []
-        for pulse in pulses[:10]:
-            tags.extend(pulse.get("tags", []))
-            categories.extend(pulse.get("targeted_countries", []))
-            for cat in pulse.get("attack_ids", []):
-                categories.append(cat.get("display_name", ""))
+        for pulse in pulses[:10]:  # limit processing to first 10 pulses
+            tags = pulse.get("tags", []) or []
+            threat_tags.extend(tags)
+            cats = pulse.get("industries", []) or []
+            categories.extend(cats)
 
-        tags = list({t.lower() for t in tags if t})[:10]
-        categories = list({c for c in categories if c})[:5]
+        # Deduplicate
+        threat_tags = list(dict.fromkeys(threat_tags))
+        categories = list(dict.fromkeys(categories))
 
-        country = data.get("country_name") or data.get("country_code")
+        country = data.get("country_code") or data.get("country") or None
 
         return {
             "found": pulse_count > 0,
             "pulse_count": pulse_count,
-            "threat_tags": tags,
+            "threat_tags": threat_tags,
             "categories": categories,
             "country": country,
-            "raw_data": {
-                "pulse_count": pulse_count,
-                "reputation": data.get("reputation", 0),
-                "asn": data.get("asn"),
-                "city": data.get("city"),
-            },
+            "raw_data": data,
         }
-    except httpx.HTTPStatusError as e:
-        return {"found": False, "error": str(e), "pulse_count": 0, "threat_tags": [], "categories": [], "country": None, "raw_data": {}}
-    except Exception as e:
-        return {"found": False, "error": str(e), "pulse_count": 0, "threat_tags": [], "categories": [], "country": None, "raw_data": {}}
+
+    except httpx.TimeoutException:
+        return {"found": False, "error": "OTX request timed out"}
+    except httpx.RequestError as exc:
+        return {"found": False, "error": f"OTX request error: {str(exc)}"}
+    except Exception as exc:
+        return {"found": False, "error": f"Unexpected OTX error: {str(exc)}"}

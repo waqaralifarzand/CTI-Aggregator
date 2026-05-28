@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, Text, TIMESTAMP
-from sqlalchemy.sql import func
-from ..database import Base
+from datetime import datetime
+from sqlalchemy import Column, Integer, Text, DateTime
+from database import Base
 
 
 class FeedStatus(Base):
@@ -8,8 +8,8 @@ class FeedStatus(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     feed_name = Column(Text, nullable=False, unique=True)
-    status = Column(Text, nullable=False, default="unknown")
-    last_synced = Column(TIMESTAMP, nullable=True)
-    record_count = Column(Integer, nullable=False, default=0)
+    status = Column(Text, default="unknown")
+    last_synced = Column(DateTime, nullable=True)
+    record_count = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
-    updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, default=datetime.utcnow)

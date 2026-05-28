@@ -1,105 +1,70 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import SeverityBadge from '../shared/SeverityBadge'
-import LoadingSkeleton from '../shared/LoadingSkeleton'
-import EmptyState from '../shared/EmptyState'
 
-const TYPE_LABEL = {
-  ip: 'IP', domain: 'Domain',
-  hash_md5: 'MD5', hash_sha256: 'SHA256', hash_sha1: 'SHA1',
-}
-
-function relativeTime(dateStr) {
-  if (!dateStr) return '—'
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins  = Math.floor(diff / 60000)
+function relativeTime(iso) {
+  if (!iso) return '—'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
   const hours = Math.floor(mins / 60)
-  const days  = Math.floor(hours / 24)
-  if (days > 0) return `${days}d ago`
-  if (hours > 0) return `${hours}h ago`
-  if (mins > 0) return `${mins}m ago`
-  return 'Just now'
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
-function SkeletonRow() {
-  return (
-    <tr>
-      {[200, 60, 80, 40, 60, 30].map((w, i) => (
-        <td key={i} style={{ padding: '10px 12px' }}>
-          <LoadingSkeleton height={12} width={w} />
-        </td>
-      ))}
-    </tr>
+export default function RecentScansTable({ scans }) {
+  if (!scans?.length) return (
+    <div style={{ padding: '24px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
+      No scans yet
+    </div>
   )
-}
 
-export default function RecentScansTable({ data, loading }) {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            {['IoC Value', 'Type', 'Severity', 'Score', 'When', ''].map(h => (
+          <tr>
+            {['IoC Value', 'Type', 'Severity', 'Score', 'Time', ''].map(h => (
               <th key={h} style={{
-                padding: '8px 12px', textAlign: 'left', fontWeight: 600,
-                fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase',
-                letterSpacing: '0.06em', whiteSpace: 'nowrap',
-              }}>
-                {h}
-              </th>
+                padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600',
+                color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px',
+                borderBottom: '1px solid var(--border)',
+              }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {loading && [...Array(5)].map((_, i) => <SkeletonRow key={i} />)}
-
-          {!loading && (!data || data.length === 0) && (
-            <tr>
-              <td colSpan={6}>
-                <EmptyState
-                  title="No scans yet"
-                  description="Go to the Scanner page to run your first IoC scan"
-                />
-              </td>
-            </tr>
-          )}
-
-          {!loading && data?.map(scan => (
-            <tr
-              key={scan.scan_id}
-              style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          {scans.map(s => (
+            <tr key={s.scan_id}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <td style={{ padding: '10px 12px', maxWidth: '180px' }}>
-                <span style={{
-                  fontFamily: 'JetBrains Mono, monospace', fontSize: '12px',
-                  color: 'var(--text-primary)', display: 'block',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {scan.ioc_value}
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)' }}>
+                <span className="mono" style={{ fontSize: '12px', color: 'var(--text-primary)' }}
+                  title={s.ioc_value}>
+                  {s.ioc_value?.length > 25 ? s.ioc_value.slice(0, 25) + '…' : s.ioc_value}
                 </span>
               </td>
-              <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>
-                  {TYPE_LABEL[scan.ioc_type] || scan.ioc_type}
-                </span>
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                {s.ioc_type?.replace('hash_', '').toUpperCase()}
               </td>
-              <td style={{ padding: '10px 12px' }}>
-                <SeverityBadge severity={scan.overall_severity} size="sm" />
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)' }}>
+                <SeverityBadge severity={s.overall_severity} />
               </td>
-              <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                {scan.threat_score}
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>
+                {s.threat_score}
               </td>
-              <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                {relativeTime(scan.scanned_at)}
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}
+                title={s.scanned_at ? new Date(s.scanned_at).toLocaleString() : ''}>
+                {relativeTime(s.scanned_at)}
               </td>
-              <td style={{ padding: '10px 12px' }}>
-                <Link
-                  to={`/results/${scan.scan_id}`}
-                  style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
-                  title="View results"
-                >
-                  <LinkIcon />
+              <td style={{ padding: '9px 12px', borderBottom: '1px solid var(--border)' }}>
+                <Link to={`/results/${s.scan_id}`} style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
                 </Link>
               </td>
             </tr>
@@ -107,15 +72,5 @@ export default function RecentScansTable({ data, loading }) {
         </tbody>
       </table>
     </div>
-  )
-}
-
-function LinkIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-      <polyline points="15 3 21 3 21 9"/>
-      <line x1="10" y1="14" x2="21" y2="3"/>
-    </svg>
   )
 }

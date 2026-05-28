@@ -1,14 +1,21 @@
 import httpx
 
+GEO_API_URL = "http://ip-api.com/json/{ip}"
+
 
 async def query_geo(ip: str) -> dict | None:
+    """Query ip-api.com for geolocation information about an IP address."""
     try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.get(f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,regionName,city,isp,as")
-        resp.raise_for_status()
-        data = resp.json()
+        url = GEO_API_URL.format(ip=ip)
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url)
 
-        if data.get("status") != "success":
+        if response.status_code != 200:
+            return None
+
+        data = response.json()
+
+        if data.get("status") == "fail":
             return None
 
         return {
@@ -19,5 +26,10 @@ async def query_geo(ip: str) -> dict | None:
             "isp": data.get("isp"),
             "asn": data.get("as"),
         }
+
+    except httpx.TimeoutException:
+        return None
+    except httpx.RequestError:
+        return None
     except Exception:
         return None

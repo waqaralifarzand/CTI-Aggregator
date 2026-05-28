@@ -1,77 +1,28 @@
-import { useMemo } from 'react'
+import React from 'react'
 
-const TYPE_LABELS = {
-  ip: 'IP Address',
-  domain: 'Domain',
-  hash_md5: 'MD5 Hash',
-  hash_sha256: 'SHA256 Hash',
-  hash_sha1: 'SHA1 Hash',
+const typeConfig = {
+  ip: { label: 'IP Address', color: 'var(--info)', bg: 'rgba(59,130,246,0.15)' },
+  domain: { label: 'Domain', color: 'var(--accent)', bg: 'rgba(6,182,212,0.15)' },
+  hash_md5: { label: 'MD5 Hash', color: 'var(--medium)', bg: 'rgba(234,179,8,0.15)' },
+  hash_sha256: { label: 'SHA-256 Hash', color: 'var(--high)', bg: 'rgba(249,115,22,0.15)' },
+  hash_sha1: { label: 'SHA-1 Hash', color: 'var(--text-secondary)', bg: 'rgba(148,163,184,0.15)' },
 }
 
-const TYPE_COLORS = {
-  ip: 'var(--info)',
-  domain: 'var(--accent)',
-  hash_md5: 'var(--medium)',
-  hash_sha256: 'var(--medium)',
-  hash_sha1: 'var(--medium)',
-}
-
-function detectTypeClient(value) {
-  const v = value.trim()
-  if (!v) return null
-
-  // IPv4
-  const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/
-  if (ipv4.test(v)) {
-    const parts = v.split('.').map(Number)
-    if (parts.every(p => p >= 0 && p <= 255)) return 'ip'
-  }
-
-  // IPv6 (basic check)
-  if (v.includes(':') && /^[0-9a-fA-F:]+$/.test(v)) return 'ip'
-
-  // MD5 — 32 hex chars
-  if (/^[0-9a-fA-F]{32}$/.test(v)) return 'hash_md5'
-
-  // SHA256 — 64 hex chars
-  if (/^[0-9a-fA-F]{64}$/.test(v)) return 'hash_sha256'
-
-  // SHA1 — 40 hex chars
-  if (/^[0-9a-fA-F]{40}$/.test(v)) return 'hash_sha1'
-
-  // Domain
-  if (/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(v)) return 'domain'
-
-  return null
-}
-
-export default function IocTypeBadge({ value }) {
-  const type = useMemo(() => detectTypeClient(value || ''), [value])
-
-  if (!type || !value?.trim()) return null
-
-  const color = TYPE_COLORS[type] || 'var(--text-muted)'
-  const label = TYPE_LABELS[type] || type
-
+export default function IocTypeBadge({ type }) {
+  if (!type) return null
+  const cfg = typeConfig[type]
+  if (!cfg) return null
   return (
     <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '3px 10px',
-      borderRadius: '999px',
-      fontSize: '11px',
-      fontWeight: 600,
-      letterSpacing: '0.04em',
-      textTransform: 'uppercase',
-      color,
-      backgroundColor: `${color}22`,
-      border: `1px solid ${color}44`,
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      padding: '3px 10px', borderRadius: '9999px',
+      fontSize: '12px', fontWeight: '600',
+      color: cfg.color, background: cfg.bg,
     }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color, display: 'inline-block' }} />
-      {label}
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+        <circle cx="5" cy="5" r="5" />
+      </svg>
+      {cfg.label}
     </span>
   )
 }
-
-export { detectTypeClient }

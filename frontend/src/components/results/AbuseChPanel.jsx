@@ -1,80 +1,77 @@
-function SubSection({ title, data, type }) {
-  const applicable = data?.applicable !== false
-  const found = data?.found
+import React, { useState } from 'react'
 
+function SubPanel({ title, data, fields }) {
+  if (!data) return null
   return (
-    <div style={{ padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: found ? '12px' : 0 }}>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px' }}>{title}</span>
-        {!applicable ? (
-          <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontStyle: 'italic' }}>Not applicable for this IoC type</span>
-        ) : found ? (
-          <span style={{ color: 'var(--critical)', fontSize: '12px', fontWeight: 600 }}>⚠ Flagged</span>
-        ) : (
-          <span style={{ color: 'var(--clean)', fontSize: '12px' }}>✓ Clean</span>
-        )}
+    <div style={{ padding: '14px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{
+          background: data.found ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
+          color: data.found ? 'var(--critical)' : 'var(--clean)',
+          borderRadius: '4px', padding: '1px 6px', fontSize: '10px', fontWeight: '700',
+        }}>
+          {data.found ? 'FOUND' : 'CLEAN'}
+        </span>
+        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{title}</span>
       </div>
-
-      {applicable && found && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
-          {type === 'urlhaus' && (
-            <>
-              {data.url_count > 0 && (
-                <Row label="Malicious URLs" value={data.url_count} />
-              )}
-              {data.tags?.length > 0 && (
-                <Row label="Tags" value={data.tags.join(', ')} />
-              )}
-            </>
-          )}
-          {type === 'malwarebazaar' && (
-            <>
-              {data.file_type && <Row label="File Type" value={data.file_type} />}
-              {data.signature && <Row label="Signature" value={data.signature} />}
-              {data.tags?.length > 0 && <Row label="Tags" value={data.tags.join(', ')} />}
-            </>
-          )}
+      {data.found && fields.map(f => data[f.key] != null && (
+        <div key={f.key} style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>{f.label}: </span>{data[f.key]}
+        </div>
+      ))}
+      {data.found && data.tags?.length > 0 && (
+        <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          {data.tags.map(t => (
+            <span key={t} style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--critical)', borderRadius: '3px', padding: '1px 6px', fontSize: '11px' }}>{t}</span>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-function Row({ label, value }) {
-  return (
-    <div style={{ display: 'flex', gap: '12px' }}>
-      <span style={{ color: 'var(--text-muted)', minWidth: 110 }}>{label}</span>
-      <span style={{ color: 'var(--text-primary)' }}>{value ?? '—'}</span>
-    </div>
-  )
-}
-
-export default function AbuseChPanel({ urlhaus, malwarebazaar, animStyle }) {
+export default function AbuseChPanel({ urlhaus, malwarebazaar }) {
+  const [open, setOpen] = useState(true)
   const anyFound = urlhaus?.found || malwarebazaar?.found
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: `1px solid ${anyFound ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
-      borderRadius: '8px',
-      padding: '16px 20px',
-      opacity: anyFound ? 1 : 0.8,
-      ...animStyle,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-        <span style={{
-          fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
-          padding: '2px 6px', borderRadius: '3px',
-          background: 'rgba(249,115,22,0.15)', color: 'var(--high)',
-        }}>ABUSE.CH</span>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '14px' }}>
-          Abuse.ch Feeds
-        </span>
-      </div>
-      <SubSection title="URLhaus" data={urlhaus} type="urlhaus" />
-      <div style={{ paddingTop: '4px' }}>
-        <SubSection title="MalwareBazaar" data={malwarebazaar} type="malwarebazaar" />
-      </div>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer',
+          color: 'var(--text-primary)', fontFamily: 'inherit',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            background: anyFound ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
+            color: anyFound ? 'var(--critical)' : 'var(--clean)',
+            borderRadius: '4px', padding: '2px 8px', fontSize: '11px', fontWeight: '600',
+          }}>
+            {anyFound ? 'FOUND' : 'CLEAN'}
+          </span>
+          <span style={{ fontWeight: '600', fontSize: '14px' }}>Abuse.ch Feeds</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: 'var(--text-muted)' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <SubPanel title="URLhaus" data={urlhaus} fields={[
+              { key: 'url_count', label: 'URLs' },
+            ]} />
+            <SubPanel title="MalwareBazaar" data={malwarebazaar} fields={[
+              { key: 'file_type', label: 'File Type' },
+              { key: 'signature', label: 'Signature' },
+            ]} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

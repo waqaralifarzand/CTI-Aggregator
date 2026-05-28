@@ -1,96 +1,94 @@
+import React from 'react'
 import SeverityBadge from '../shared/SeverityBadge'
 
-const SEVERITY_COLOR_VAR = {
-  critical: 'var(--critical)',
-  high: 'var(--high)',
-  medium: 'var(--medium)',
-  low: 'var(--low)',
-  clean: 'var(--clean)',
+function scoreColor(score) {
+  if (score >= 76) return 'var(--critical)'
+  if (score >= 51) return 'var(--high)'
+  if (score >= 26) return 'var(--medium)'
+  if (score >= 1) return 'var(--low)'
+  return 'var(--clean)'
 }
 
-function ScoreRing({ score, severity }) {
-  const color = SEVERITY_COLOR_VAR[severity] || 'var(--clean)'
-  const radius = 44
-  const circumference = 2 * Math.PI * radius
-  const filled = circumference * (score / 100)
-  const gap = circumference - filled
-
-  return (
-    <div style={{ position: 'relative', width: 110, height: 110, flexShrink: 0 }}>
-      <svg width="110" height="110" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="55" cy="55" r={radius} fill="none" stroke="var(--border)" strokeWidth="8" />
-        <circle
-          cx="55" cy="55" r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${filled} ${gap}`}
-          style={{ transition: 'stroke-dasharray 0.6s ease' }}
-        />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <span style={{ fontSize: '26px', fontWeight: 700, color, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>/100</span>
-      </div>
-    </div>
-  )
-}
-
-export default function ThreatOverviewCard({ data }) {
-  const { overall_severity, threat_score, ml_severity, ml_confidence, scanned_at, ioc } = data
-
-  const formattedDate = scanned_at
-    ? new Date(scanned_at).toLocaleString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
-      })
-    : '—'
+export default function ThreatOverviewCard({ scan }) {
+  if (!scan) return null
+  const { overall_severity, threat_score, ml_severity, ml_confidence, scanned_at } = scan
 
   return (
     <div style={{
       background: 'var(--bg-card)',
       border: '1px solid var(--border)',
-      borderRadius: '8px',
+      borderRadius: '10px',
       padding: '24px',
-      display: 'flex',
+      display: 'grid',
+      gridTemplateColumns: 'auto 1fr auto',
+      gap: '24px',
       alignItems: 'center',
-      gap: '32px',
-      flexWrap: 'wrap',
     }}>
-      <ScoreRing score={threat_score} severity={overall_severity} />
-
-      <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-            Threat Assessment
-          </span>
-          <SeverityBadge severity={overall_severity} size="md" />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px', fontSize: '13px' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Threat Score</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{threat_score}/100</span>
-
-          <span style={{ color: 'var(--text-muted)' }}>IoC Type</span>
-          <span style={{ color: 'var(--text-primary)', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.04em' }}>{ioc?.type?.replace('hash_', '') || '—'}</span>
-
-          <span style={{ color: 'var(--text-muted)' }}>ML Prediction</span>
-          <span style={{ color: 'var(--text-primary)' }}>
-            {ml_severity
-              ? <><SeverityBadge severity={ml_severity} size="sm" /> <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{ml_confidence ? `${(ml_confidence * 100).toFixed(0)}% confidence` : ''}</span></>
-              : <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Model not trained</span>
-            }
-          </span>
-
-          <span style={{ color: 'var(--text-muted)' }}>Scanned</span>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{formattedDate}</span>
-        </div>
+      {/* Score circle */}
+      <div style={{
+        width: '90px',
+        height: '90px',
+        borderRadius: '50%',
+        border: `3px solid ${scoreColor(threat_score)}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: '28px', fontWeight: '800', color: scoreColor(threat_score), lineHeight: 1 }}>
+          {threat_score}
+        </span>
+        <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>SCORE</span>
       </div>
+
+      {/* Center info */}
+      <div>
+        <div style={{ marginBottom: '8px' }}>
+          <SeverityBadge severity={overall_severity} />
+        </div>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 4px' }}>
+          Threat Score: <span style={{ color: scoreColor(threat_score), fontWeight: '700' }}>{threat_score}/100</span>
+        </p>
+        {scanned_at && (
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+            Scanned {new Date(scanned_at).toLocaleString()}
+          </p>
+        )}
+      </div>
+
+      {/* ML prediction */}
+      {(ml_severity || ml_confidence) && (
+        <div style={{
+          background: 'rgba(6,182,212,0.05)',
+          border: '1px solid rgba(6,182,212,0.2)',
+          borderRadius: '8px',
+          padding: '14px 18px',
+          textAlign: 'center',
+          minWidth: '140px',
+        }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            ML Prediction
+          </div>
+          <SeverityBadge severity={ml_severity} />
+          {ml_confidence != null && (
+            <div style={{ marginTop: '8px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                Confidence: {Math.round(ml_confidence * 100)}%
+              </div>
+              <div style={{ height: '4px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${ml_confidence * 100}%`,
+                  background: 'var(--accent)',
+                  borderRadius: '2px',
+                  transition: 'width 0.3s',
+                }} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

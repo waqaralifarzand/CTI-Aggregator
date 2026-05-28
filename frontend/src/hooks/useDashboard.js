@@ -4,58 +4,93 @@ import {
   getDashboardActivity,
   getSeverityBreakdown,
   getIocBreakdown,
-  getTicker,
+  getDashboardTicker,
+  getRecentScans,
   getFeeds,
-  recentScans,
 } from '../api/client'
 
-function makeSection() {
-  return { data: null, loading: true, error: null }
-}
-
 export default function useDashboard() {
-  const [stats,            setStats]            = useState(makeSection())
-  const [activity,         setActivity]         = useState(makeSection())
-  const [severityBreakdown,setSeverityBreakdown] = useState(makeSection())
-  const [iocBreakdown,     setIocBreakdown]     = useState(makeSection())
-  const [ticker,           setTicker]           = useState(makeSection())
-  const [feeds,            setFeeds]            = useState(makeSection())
-  const [recent,           setRecent]           = useState(makeSection())
-  const [lastUpdated,      setLastUpdated]      = useState(null)
+  const [stats, setStats] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState(null)
 
-  function load(apiFn, setter, transform) {
-    apiFn()
-      .then(res => {
-        const data = res.data?.success ? res.data.data : null
-        setter({ data: transform ? transform(data) : data, loading: false, error: null })
-      })
-      .catch(err => setter({ data: null, loading: false, error: err.message || 'Failed' }))
+  const [activity, setActivity] = useState([])
+  const [activityLoading, setActivityLoading] = useState(true)
+
+  const [severityBreakdown, setSeverityBreakdown] = useState([])
+  const [iocBreakdown, setIocBreakdown] = useState([])
+  const [chartsLoading, setChartsLoading] = useState(true)
+
+  const [ticker, setTicker] = useState([])
+  const [recentScans, setRecentScans] = useState([])
+  const [recentLoading, setRecentLoading] = useState(true)
+
+  const [feeds, setFeeds] = useState([])
+
+  useEffect(() => {
+    let mounted = true
+
+    const fetchAll = async () => {
+      try {
+        const [statsRes, activityRes, sevRes, iocRes, recentRes, feedsRes] = await Promise.allSettled([
+          getDashboardStats(),
+          getDashboardActivity(),
+          getSeverityBreakdown(),
+          getIocBreakdown(),
+          getRecentScans(10),
+          getFeeds(),
+        ])
+
+        if (!mounted) return
+
+        if (statsRes.status === 'fulfilled') setStats(statsRes.value.data?.data)
+        else setStatsError('Failed to load stats')
+        setStatsLoading(false)
+
+        if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data?.data || [])
+        setActivityLoading(false)
+
+        if (sevRes.status === 'fulfilled') setSeverityBreakdown(sevRes.value.data?.data || [])
+        if (iocRes.status === 'fulfilled') setIocBreakdown(iocRes.value.data?.data || [])
+        setChartsLoading(false)
+
+        if (recentRes.status === 'fulfilled') setRecentScans(recentRes.value.data?.data || [])
+        setRecentLoading(false)
+
+        if (feedsRes.status === 'fulfilled') setFeeds(feedsRes.value.data?.data || [])
+      } catch {
+        if (mounted) {
+          setStatsLoading(false)
+          setActivityLoading(false)
+          setChartsLoading(false)
+          setRecentLoading(false)
+        }
+      }
+    }
+
+    fetchAll()
+    return () => { mounted = false }
+  }, [])
+
+  const fetchTicker = async () => {
+    try {
+      const res = await getDashboardTicker(20)
+      setTicker(res.data?.data || [])
+    } catch {}
   }
 
-  function fetchAll() {
-    setStats(makeSection())
-    setActivity(makeSection())
-    setSeverityBreakdown(makeSection())
-    setIocBreakdown(makeSection())
-    setTicker(makeSection())
-    setFeeds(makeSection())
-    setRecent(makeSection())
-
-    load(getDashboardStats, setStats)
-    load(getDashboardActivity, setActivity)
-    load(getSeverityBreakdown, setSeverityBreakdown)
-    load(getIocBreakdown, setIocBreakdown)
-    load(getTicker, setTicker)
-    load(getFeeds, setFeeds)
-    load(() => recentScans(10), setRecent)
-
-    setLastUpdated(new Date())
-  }
-
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    fetchTicker()
+    const interval = setInterval(fetchTicker, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   return {
-    stats, activity, severityBreakdown, iocBreakdown, ticker, feeds, recent,
-    lastUpdated, refresh: fetchAll,
+    stats, statsLoading, statsError,
+    activity, activityLoading,
+    severityBreakdown, iocBreakdown, chartsLoading,
+    ticker,
+    recentScans, recentLoading,
+    feeds,
   }
 }

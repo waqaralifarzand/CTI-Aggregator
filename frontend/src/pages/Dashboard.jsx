@@ -1,191 +1,113 @@
-import useDashboard from '../hooks/useDashboard'
+import React, { useEffect } from 'react'
+import PageWrapper from '../components/layout/PageWrapper'
 import LiveTicker from '../components/dashboard/LiveTicker'
 import StatCard from '../components/dashboard/StatCard'
 import SeverityDonut from '../components/dashboard/SeverityDonut'
-import ActivityLine from '../components/dashboard/ActivityLine'
 import IocTypeBar from '../components/dashboard/IocTypeBar'
-import FeedHealthWidget from '../components/dashboard/FeedHealthWidget'
+import ActivityLine from '../components/dashboard/ActivityLine'
 import RecentScansTable from '../components/dashboard/RecentScansTable'
+import FeedHealthWidget from '../components/dashboard/FeedHealthWidget'
 import LoadingSkeleton from '../components/shared/LoadingSkeleton'
+import EmptyState from '../components/shared/EmptyState'
+import ErrorState from '../components/shared/ErrorState'
+import useDashboard from '../hooks/useDashboard'
 
-const CARD_STYLE = {
+const cardStyle = {
   background: 'var(--bg-card)',
   border: '1px solid var(--border)',
-  borderRadius: '8px',
-  padding: '20px',
-}
-
-const CHART_HEADER_STYLE = {
-  color: 'var(--text-muted)',
-  fontSize: '11px',
-  fontWeight: 700,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  margin: '0 0 14px',
+  borderRadius: '10px',
 }
 
 export default function Dashboard() {
-  const { stats, activity, severityBreakdown, iocBreakdown, ticker, feeds, recent, lastUpdated, refresh } = useDashboard()
+  const {
+    stats, statsLoading, statsError,
+    activity, activityLoading,
+    severityBreakdown, iocBreakdown, chartsLoading,
+    recentScans, recentLoading,
+    feeds,
+  } = useDashboard()
 
-  const statsData = stats.data || {}
-  const feedList  = feeds.data || []
+  useEffect(() => { document.title = 'Dashboard — CTI Aggregator' }, [])
 
-  const fmt = (n) => n?.toLocaleString() ?? '—'
-  const updatedStr = lastUpdated
-    ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    : null
+  const noData = !statsLoading && !statsError && (stats?.total_scans ?? 0) === 0
 
   return (
-    <div style={{ marginLeft: '240px', minHeight: '100vh', background: 'var(--bg-primary)' }}>
-      {/* Live Ticker — full width, flush */}
+    <div>
       <LiveTicker />
-
-      <div style={{ padding: '24px 28px' }}>
-        {/* Page header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <div>
-            <h1 style={{ color: 'var(--text-primary)', fontSize: '22px', fontWeight: 700, margin: 0 }}>
-              Dashboard
-            </h1>
-            {updatedStr && (
-              <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: '2px 0 0' }}>
-                Last updated {updatedStr}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={refresh}
-            style={{
-              padding: '6px 14px', borderRadius: '6px',
-              border: '1px solid var(--border)', background: 'transparent',
-              color: 'var(--accent)', cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit',
-            }}
-          >
-            Refresh
-          </button>
+      <PageWrapper>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '3px' }}>Threat intelligence overview</p>
         </div>
 
-        {/* Stat Cards */}
-        <div style={{ display: 'flex', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <StatCard
-            icon={<ScanIcon />}
-            label="Total Scans"
-            value={stats.loading ? '…' : fmt(statsData.total_scans)}
-            accentColor="var(--accent)"
-          />
-          <StatCard
-            icon={<ThreatsIcon />}
-            label="Threats Found"
-            value={stats.loading ? '…' : fmt(statsData.threats_found)}
-            subtitle={statsData.total_scans ? `${Math.round((statsData.threats_found / statsData.total_scans) * 100)}% hit rate` : undefined}
-            accentColor="var(--high)"
-          />
-          <StatCard
-            icon={<CriticalIcon />}
-            label="Critical Alerts"
-            value={stats.loading ? '…' : fmt(statsData.critical_alerts)}
-            accentColor="var(--critical)"
-          />
-          <StatCard
-            icon={<CleanIcon />}
-            label="Clean Scans"
-            value={stats.loading ? '…' : fmt(statsData.clean_scans)}
-            accentColor="var(--clean)"
-          />
+        {/* Stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          {statsLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height="100px" borderRadius="10px" />)
+          ) : statsError ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <ErrorState message="Failed to load statistics" />
+            </div>
+          ) : (
+            <>
+              <StatCard label="Total Scans" value={stats?.total_scans ?? 0}
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>} />
+              <StatCard label="Threats Found" value={stats?.threats_found ?? 0}
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} />
+              <StatCard label="Critical Alerts" value={stats?.critical_alerts ?? 0}
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>} />
+              <StatCard label="Clean Scans" value={stats?.clean_scans ?? 0}
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>} />
+            </>
+          )}
         </div>
 
         {/* Charts row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '14px', marginBottom: '20px' }}>
-          <div style={CARD_STYLE}>
-            <p style={CHART_HEADER_STYLE}>Severity Breakdown</p>
-            <SeverityDonut data={severityBreakdown.data} loading={severityBreakdown.loading} />
-          </div>
-          <div style={CARD_STYLE}>
-            <p style={CHART_HEADER_STYLE}>Scan Activity — Last 7 Days</p>
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
-              <Legend color="#06b6d4" label="Total Scans" />
-              <Legend color="#f97316" label="Threats" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+          {[
+            { title: 'Severity Breakdown', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <SeverityDonut data={severityBreakdown} /> },
+            { title: 'IoC Types', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <IocTypeBar data={iocBreakdown} /> },
+            { title: '7-Day Activity', component: noData ? <EmptyState message="No data yet" subtext="Run your first scan to see data" /> : <ActivityLine data={activity} /> },
+          ].map(({ title, component }) => (
+            <div key={title} style={{ ...cardStyle, padding: '20px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {title}
+              </h3>
+              {chartsLoading || activityLoading ? <LoadingSkeleton height="200px" /> : component}
             </div>
-            <ActivityLine data={activity.data} loading={activity.loading} />
-          </div>
-          <div style={CARD_STYLE}>
-            <p style={CHART_HEADER_STYLE}>IoC Type Breakdown</p>
-            <IocTypeBar data={iocBreakdown.data} loading={iocBreakdown.loading} />
-          </div>
+          ))}
         </div>
 
-        {/* Bottom row: feed health + recent scans */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px', alignItems: 'start' }}>
-          {/* Feed health 2×2 grid */}
-          <div>
-            <p style={{ ...CHART_HEADER_STYLE, marginBottom: '10px' }}>Feed Health</p>
-            {feeds.loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {[...Array(4)].map((_, i) => <LoadingSkeleton key={i} height={100} />)}
-              </div>
+        {/* Bottom row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '16px' }}>
+          <div style={{ ...cardStyle, padding: '20px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Feed Health
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {feeds.map(f => <FeedHealthWidget key={f.feed_name} feed={f} />)}
+              {!feeds.length && (
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px' }}>No feeds</div>
+              )}
+            </div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ padding: '20px 20px 0' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Recent Scans
+              </h3>
+            </div>
+            {recentLoading ? (
+              <div style={{ padding: '20px' }}><LoadingSkeleton height="160px" /></div>
+            ) : noData ? (
+              <EmptyState message="No scans yet" subtext="Run your first scan from the Scanner page" />
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {feedList.length > 0
-                  ? feedList.map(feed => (
-                      <FeedHealthWidget key={feed.feed_name} feed={feed} />
-                    ))
-                  : [{ feed_name: 'otx', display_name: 'AlienVault OTX', status: 'unknown' },
-                     { feed_name: 'urlhaus', display_name: 'URLhaus', status: 'unknown' },
-                     { feed_name: 'malwarebazaar', display_name: 'MalwareBazaar', status: 'unknown' },
-                     { feed_name: 'virustotal', display_name: 'VirusTotal', status: 'unknown' },
-                    ].map(feed => <FeedHealthWidget key={feed.feed_name} feed={feed} />)
-                }
-              </div>
+              <RecentScansTable scans={recentScans} />
             )}
           </div>
-
-          {/* Recent scans table */}
-          <div style={CARD_STYLE}>
-            <p style={CHART_HEADER_STYLE}>Recent Scans</p>
-            <RecentScansTable data={recent.data} loading={recent.loading} />
-          </div>
         </div>
-      </div>
+      </PageWrapper>
     </div>
-  )
-}
-
-function Legend({ color, label }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-muted)' }}>
-      <span style={{ width: 20, height: 2, background: color, display: 'inline-block', borderRadius: '1px' }} />
-      {label}
-    </div>
-  )
-}
-
-// Inline SVG icons (monochrome, use currentColor)
-function ScanIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-  )
-}
-function ThreatsIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-  )
-}
-function CriticalIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  )
-}
-function CleanIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
   )
 }

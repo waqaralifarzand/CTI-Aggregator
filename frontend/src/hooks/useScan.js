@@ -1,31 +1,27 @@
 import { useState } from 'react'
-import { submitScan } from '../api/client'
+import { scanIoc } from '../api/client'
 
 export default function useScan() {
-  const [iocValue, setIocValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [scanId, setScanId] = useState(null)
 
-  const scan = async (value) => {
-    const trimmed = (value || iocValue).trim()
-    if (!trimmed) return null
-
+  const submitScan = async (value) => {
     setLoading(true)
     setError(null)
-
+    setScanId(null)
     try {
-      const res = await submitScan(trimmed)
-      if (res.data?.success) {
-        return res.data.data.scan_id
+      const res = await scanIoc(value.trim())
+      const data = res.data
+      if (data.success) {
+        setScanId(data.data.scan_id)
+        return data.data.scan_id
+      } else {
+        setError(data.error || 'Scan failed')
+        return null
       }
-      setError(res.data?.error || 'Scan failed')
-      return null
     } catch (err) {
-      const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.error ||
-        err.message ||
-        'Scan request failed'
+      const msg = err.response?.data?.error || err.message || 'Scan failed'
       setError(msg)
       return null
     } finally {
@@ -33,5 +29,5 @@ export default function useScan() {
     }
   }
 
-  return { iocValue, setIocValue, loading, error, setError, scan }
+  return { loading, error, scanId, submitScan }
 }

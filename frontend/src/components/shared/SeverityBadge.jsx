@@ -1,41 +1,39 @@
-const SEVERITY_STYLES = {
-  critical: { color: 'var(--critical)', bg: 'rgba(239,68,68,0.15)' },
-  high:     { color: 'var(--high)',     bg: 'rgba(249,115,22,0.15)' },
-  medium:   { color: 'var(--medium)',   bg: 'rgba(234,179,8,0.15)'  },
-  low:      { color: 'var(--low)',      bg: 'rgba(34,197,94,0.15)'  },
-  clean:    { color: 'var(--clean)',    bg: 'rgba(16,185,129,0.15)' },
+import React from 'react'
+
+const severityConfig = {
+  critical: { color: 'var(--critical)', bg: 'rgba(239, 68, 68, 0.15)' },
+  high: { color: 'var(--high)', bg: 'rgba(249, 115, 22, 0.15)' },
+  medium: { color: 'var(--medium)', bg: 'rgba(234, 179, 8, 0.15)' },
+  low: { color: 'var(--low)', bg: 'rgba(34, 197, 94, 0.15)' },
+  clean: { color: 'var(--clean)', bg: 'rgba(16, 185, 129, 0.15)' },
+  info: { color: 'var(--info)', bg: 'rgba(59, 130, 246, 0.15)' },
 }
 
-const LABELS = {
-  critical: 'Critical',
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-  clean: 'Clean',
-}
-
-export default function SeverityBadge({ severity, size = 'md' }) {
-  const s = (severity || 'clean').toLowerCase()
-  const style = SEVERITY_STYLES[s] || SEVERITY_STYLES.clean
-  const fontSize = size === 'lg' ? '13px' : size === 'sm' ? '10px' : '11px'
-  const padding = size === 'lg' ? '5px 14px' : size === 'sm' ? '2px 7px' : '3px 10px'
+export default function SeverityBadge({ severity }) {
+  if (!severity) return null
+  const key = severity.toLowerCase()
+  const config = severityConfig[key] || {
+    color: 'var(--text-secondary)',
+    bg: 'rgba(148, 163, 184, 0.15)',
+  }
 
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding,
-      borderRadius: '999px',
-      fontSize,
-      fontWeight: 600,
-      letterSpacing: '0.04em',
-      textTransform: 'uppercase',
-      color: style.color,
-      backgroundColor: style.bg,
-      border: `1px solid ${style.color}33`,
-      whiteSpace: 'nowrap',
-    }}>
-      {LABELS[s] || s}
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '3px 10px',
+        borderRadius: '9999px',
+        fontSize: '12px',
+        fontWeight: '600',
+        color: config.color,
+        background: config.bg,
+        textTransform: 'capitalize',
+        letterSpacing: '0.3px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {severity}
     </span>
   )
 }
