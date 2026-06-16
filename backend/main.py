@@ -37,7 +37,7 @@ def _init_db():
 
     db = SessionLocal()
     try:
-        for feed_name in ("otx", "urlhaus", "malwarebazaar", "virustotal"):
+        for feed_name in ("otx", "virustotal"):
             existing = db.query(FeedStatus).filter(FeedStatus.feed_name == feed_name).first()
             if existing is None:
                 db.add(
@@ -50,6 +50,12 @@ def _init_db():
                         updated_at=datetime.utcnow(),
                     )
                 )
+
+        # Drop the broken Abuse.ch feeds so they no longer appear on the dashboard
+        db.query(FeedStatus).filter(
+            FeedStatus.feed_name.in_(["urlhaus", "malwarebazaar"])
+        ).delete(synchronize_session=False)
+
         db.commit()
     except Exception as exc:
         db.rollback()
