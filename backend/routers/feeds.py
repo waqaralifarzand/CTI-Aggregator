@@ -17,16 +17,6 @@ _FEED_HEALTH_CHECKS = {
         "url": "https://otx.alienvault.com/api/v1/user/me",
         "headers_fn": lambda: {"X-OTX-API-KEY": _get_otx_key()},
     },
-    "urlhaus": {
-        "method": "POST",
-        "url": "https://urlhaus-api.abuse.ch/v1/host/",
-        "data": {"host": "example.com"},
-    },
-    "malwarebazaar": {
-        "method": "POST",
-        "url": "https://mb-api.abuse.ch/api/v1/",
-        "data": {"query": "get_info", "hash": "aabbccdd"},
-    },
     "virustotal": {
         "method": "GET",
         "url": "https://www.virustotal.com/api/v3/ip_addresses/8.8.8.8",
@@ -104,14 +94,6 @@ async def refresh_feed(feed_name: str, db: Session = Depends(get_db)):
                 if feed_name == "otx":
                     # OTX user endpoint — just use existing count
                     pass
-                elif feed_name == "urlhaus":
-                    urls = body.get("urls", [])
-                    if urls:
-                        record_count = len(urls)
-                elif feed_name == "malwarebazaar":
-                    data_list = body.get("data", [])
-                    if data_list:
-                        record_count = len(data_list)
             except Exception:
                 pass
         elif resp.status_code == 401:

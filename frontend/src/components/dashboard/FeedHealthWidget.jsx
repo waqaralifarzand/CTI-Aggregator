@@ -9,8 +9,7 @@ const statusConfig = {
 
 const feedNames = {
   otx: 'AlienVault OTX',
-  urlhaus: 'Abuse.ch URLhaus',
-  malwarebazaar: 'Abuse.ch MalwareBazaar',
+  virustotal: 'VirusTotal',
 }
 
 function relativeTime(iso) {

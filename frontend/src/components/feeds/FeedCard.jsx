@@ -16,8 +16,6 @@ const statusConfig = {
 
 const feedMeta = {
   otx: { name: 'AlienVault OTX', borderColor: 'var(--accent)' },
-  urlhaus: { name: 'Abuse.ch URLhaus', borderColor: '#f97316' },
-  malwarebazaar: { name: 'Abuse.ch MalwareBazaar', borderColor: '#ef4444' },
   virustotal: { name: 'VirusTotal', borderColor: '#4f46e5' },
 }
 
